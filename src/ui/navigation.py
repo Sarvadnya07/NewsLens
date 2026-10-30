@@ -8,11 +8,14 @@ error boundaries so a single failed refresh cannot crash the whole session.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict
 
 import streamlit as st
 
 from src.services.news_service import NewsLensService
+
+logger = logging.getLogger(__name__)
 
 PAGE_DASHBOARD = "Overview Dashboard"
 PAGE_NEWS_MONITOR = "News Monitor"
@@ -61,9 +64,8 @@ def init_session_state() -> None:
             url_q = st.query_params.get("q")
             if url_q:
                 st.session_state["monitor_query"] = url_q
-    except Exception:
-        # URL sync is best-effort; never let it blow up the app.
-        pass
+    except Exception as e:
+        logger.debug("URL param initialization error: %s", e)
 
 
 def update_url_params() -> None:
@@ -88,8 +90,8 @@ def update_url_params() -> None:
             st.query_params["q"] = monitor_q
         elif "q" in st.query_params:
             del st.query_params["q"]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("URL param update error: %s", e)
 
 
 def navigate_to(page_name: str, payload: Dict[str, Any] | None = None) -> None:
