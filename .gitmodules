@@ -1,0 +1,12 @@
+[submodule "research/fake-news-detection"]
+	path = research/fake-news-detection
+	url = https://github.com/nishitpatel01/Fake_News_Detection.git
+[submodule "research/feedparser"]
+	path = research/feedparser
+	url = https://github.com/kurtmckee/feedparser.git
+[submodule "research/gdelt-doc-api"]
+	path = research/gdelt-doc-api
+	url = https://github.com/alex9smith/gdelt-doc-api.git
+[submodule "research/rank_bm25"]
+	path = research/rank_bm25
+	url = https://github.com/dorianbrown/rank_bm25.git

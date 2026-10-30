@@ -1,0 +1,49 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint, SAST & Pytest Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        # Pin actions/checkout to commit SHA (v4.2.2) to defend against supply-chain tag mutation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          submodules: false
+
+      - name: Set up Python 3.12
+        # Pin actions/setup-python to commit SHA (v5.4.0)
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies & security tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest bandit
+          pip install -r requirements.txt
+
+      - name: Lint and format check with Ruff
+        run: |
+          ruff check src tests app.py
+          ruff format --check src tests app.py
+
+      - name: Static Application Security Testing (Bandit)
+        run: |
+          bandit -r src app.py -ll
+
+      - name: Run Pytest Suite
+        run: |
+          pytest tests/ -v

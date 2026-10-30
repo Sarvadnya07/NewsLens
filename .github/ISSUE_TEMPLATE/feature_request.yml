@@ -1,0 +1,29 @@
+name: Feature Request
+description: Propose an enhancement, new data source, or capability for NewsLens India.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggest an idea or enhancement for NewsLens India.
+  - type: input
+    id: summary
+    attributes:
+      label: Feature Title
+      placeholder: Concise title for the proposal...
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Problem or Motivation
+      placeholder: What problem does this solve, or what intelligence capability does it enable?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution & Approach
+      placeholder: Describe the desired behavior, API/feed format, or UI design...
+    validations:
+      required: true

@@ -1,0 +1,11 @@
+# Codeowners for NewsLens India
+# Default owner for entire repository
+* @Sarvadnya07
+
+# Machine Learning & Ingestion algorithms
+/src/ml/ @Sarvadnya07
+/src/ingestion/ @Sarvadnya07
+/src/retrieval/ @Sarvadnya07
+
+# CI/CD and GitHub automation
+/.github/ @Sarvadnya07
