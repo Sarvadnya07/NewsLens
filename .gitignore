@@ -34,7 +34,7 @@ env/
 env.bak/
 venv.bak/
 
-# Testing & Coverage
+# Testing, Linter & Tooling Caches
 .pytest_cache/
 .ruff_cache/
 .coverage
@@ -47,14 +47,15 @@ coverage.xml
 .hypothesis/
 .tox/
 
-# Local database instances & backups (retain seed datasets like fact_checks.json)
+# Local database instances & backups (retain seed datasets like data/fact_checks.json)
 data/*.db
 data/*.db-shm
 data/*.db-wal
 data/*.db.bak
+*.sqlite
 *.sqlite3
 
-# Local scratch and tooling artifacts
+# Local scratch and editor directories
 .freebuff/
 .idea/
 .vscode/
@@ -63,8 +64,14 @@ data/*.db.bak
 *~
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Environment variables & secrets
 .env
 .env.*
 !.env.example
+
+# Local training & experiment artifacts (untrack generated joblib dumps while keeping code/metrics)
+models/*.joblib
+*.pkl
+*.pickle
