@@ -1,0 +1,82 @@
+[
+  {
+    "claim_id": "pib_001",
+    "claim": "Government is giving free laptops and tablets to all college students under the Prime Minister Digital Education Scheme 2026.",
+    "verdict": "Fake",
+    "claimant": "Viral WhatsApp and Telegram Messages",
+    "fact_checker": "PIB Fact Check (India)",
+    "review_date": "2026-02-14",
+    "source_url": "https://pib.gov.in/factcheck",
+    "explanation": "No such scheme has been launched by the Ministry of Education. The viral link is a phishing site designed to harvest personal information."
+  },
+  {
+    "claim_id": "pib_002",
+    "claim": "RBI has withdrawn Rs 500 currency notes from circulation starting next month.",
+    "verdict": "Fake",
+    "claimant": "Viral Social Media Video",
+    "fact_checker": "PIB Fact Check (India)",
+    "review_date": "2026-01-20",
+    "source_url": "https://pib.gov.in/factcheck",
+    "explanation": "Reserve Bank of India has confirmed that Rs 500 currency notes continue to be legal tender. RBI has issued no notification withdrawing them."
+  },
+  {
+    "claim_id": "boom_003",
+    "claim": "Indian Railways is canceling all senior citizen train concession services permanently.",
+    "verdict": "Misleading",
+    "claimant": "Social Media Posts",
+    "fact_checker": "BOOM Live",
+    "review_date": "2026-03-01",
+    "source_url": "https://www.boomlive.in/fact-check",
+    "explanation": "Concessions were suspended during COVID-19 pandemic for general categories and remain limited to specific categories (divyangjan, cancer patients); no new permanent cancellation order was issued."
+  },
+  {
+    "claim_id": "alt_004",
+    "claim": "Old video of earthquake in Japan shared as recent tremblor in Delhi NCR.",
+    "verdict": "False / Out of Context",
+    "claimant": "X (formerly Twitter) viral handles",
+    "fact_checker": "Alt News",
+    "review_date": "2026-03-12",
+    "source_url": "https://www.altnews.in",
+    "explanation": "The video footage is from the 2011 Fukushima earthquake in Japan and is falsely circulated claiming to be Delhi NCR tremors."
+  },
+  {
+    "claim_id": "pib_005",
+    "claim": "WhatsApp message claims that calling emergency number 112 redirects users to paid call centers that charge Rs 500.",
+    "verdict": "Fake",
+    "claimant": "Viral Audio Clip and WhatsApp Forwards",
+    "fact_checker": "PIB Fact Check (India)",
+    "review_date": "2026-04-05",
+    "source_url": "https://pib.gov.in/factcheck",
+    "explanation": "112 is India's toll-free unified emergency response support system (ERSS). It is completely free of charge across all telecom providers."
+  },
+  {
+    "claim_id": "th_006",
+    "claim": "Election Commission of India introduces voting via mobile SMS or online portal for upcoming state assembly elections.",
+    "verdict": "Fake",
+    "claimant": "Online Blog Post & Viral Link",
+    "fact_checker": "The Hindu / ECI Verification",
+    "review_date": "2026-02-28",
+    "source_url": "https://www.thehindu.com",
+    "explanation": "The Election Commission of India has not permitted mobile phone or internet voting for general voters. Physical EVM polling remains the sole statutory voting method."
+  },
+  {
+    "claim_id": "boom_007",
+    "claim": "UNESCO declares Indian National Anthem Jana Gana Mana as best national anthem in the world.",
+    "verdict": "False / Recurring Hoax",
+    "claimant": "WhatsApp Chain Letter",
+    "fact_checker": "BOOM Live",
+    "review_date": "2026-01-10",
+    "source_url": "https://www.boomlive.in",
+    "explanation": "UNESCO has repeatedly clarified that it does not evaluate or declare rankings for national anthems of any country. This hoax has circulated online since 2008."
+  },
+  {
+    "claim_id": "pib_008",
+    "claim": "Ministry of Health advisory warns public not to consume packaged milk due to chemical contamination.",
+    "verdict": "Fake",
+    "claimant": "Viral Voice Note on Social Media",
+    "fact_checker": "PIB Fact Check (India)",
+    "review_date": "2026-03-25",
+    "source_url": "https://pib.gov.in/factcheck",
+    "explanation": "No such advisory has been issued by FSSAI or the Ministry of Health. FSSAI conducts regular nationwide dairy surveillance."
+  }
+]
