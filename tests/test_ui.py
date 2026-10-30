@@ -1,4 +1,6 @@
-"""Streamlit UI integration and component unit tests for NewsLens India."""
+"""
+Streamlit UI integration and component unit tests for NewsLens India.
+"""
 
 from pathlib import Path
 
@@ -104,3 +106,59 @@ def test_app_test_url_query_param_sync():
     # Verify page switched to News Monitor via query param
     assert at.session_state["current_page"] == "News Monitor"
     assert at.session_state["monitor_query"] == "railway"
+
+
+def test_app_test_news_monitor_default_displays_records():
+    """Verify that News Monitor displays stored records under default 'All' filters."""
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    at.sidebar.radio[0].set_value("News Monitor").run()
+    assert not at.exception
+
+    # Locate markdown stating records identified
+    record_lines = [
+        line for m in at.markdown for line in m.value.splitlines() if "records identified" in line
+    ]
+    assert len(record_lines) > 0, "Expected 'records identified' header in News Monitor"
+    # Ensure it did not match 0 records when the datastore has stored articles
+    assert (
+        " 0 records identified" not in record_lines[0]
+        and "<strong>0 records identified" not in record_lines[0]
+    )
+    # The monitor renders "X records identified" on its own line, then a
+    # separate "(showing N)" summary further down; accept the header line
+    # containing "records identified" with a non-zero count.
+    header = record_lines[0]
+    assert "records identified" in header
+    assert "<strong>" in header and "</strong>" in header
+
+
+def test_app_test_evidence_coverage_page():
+    """Verify Evidence & Cross-Coverage page renders cleanly with live datastore data."""
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    # Option index 3 is Evidence & Coverage (options formatted via lambda)
+    evidence_opt = at.sidebar.radio[0].options[3]
+    at.sidebar.radio[0].set_value(evidence_opt).run()
+    assert not at.exception
+    # Verify title or header is present (HTML-escaped in page header)
+    headers = [
+        m.value
+        for m in at.markdown
+        if "Evidence &amp; Coverage" in m.value or "Evidence & Coverage" in m.value
+    ]
+    assert len(headers) > 0
+
+
+def test_app_test_methodology_page():
+    """Verify Methodology & Data Sources page renders metrics and specs cleanly."""
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    # Option index 4 is Methodology
+    methodology_opt = at.sidebar.radio[0].options[4]
+    at.sidebar.radio[0].set_value(methodology_opt).run()
+    assert not at.exception
+    markdown_content = " ".join(m.value for m in at.markdown)
+    assert "Methodology" in markdown_content
+    assert "10,000 Vocab Max" in markdown_content
+    assert "L-BFGS" in markdown_content

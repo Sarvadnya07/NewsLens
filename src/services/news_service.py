@@ -1,11 +1,21 @@
 """Application service layer orchestrating Ingestion, ML, Retrieval, and Storage."""
 
+from __future__ import annotations
+
 import hashlib
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from src.ingestion.gdelt import GdeltClient
+from src.ingestion.models import (
+    STATUS_NO_RESULTS,
+    STATUS_PROVIDER_UNAVAILABLE,
+    STATUS_SUCCESS,
+    ProviderFetchResult,
+    RefreshResult,
+)
 from src.ingestion.rss import RssIngestionService
 from src.ml.predict import FakeNewsScreeningModel
 from src.models import NormalizedArticle, canonicalize_url
@@ -20,7 +30,9 @@ class NewsLensService:
     """Central orchestration service for NewsLens India."""
 
     def __init__(
-        self, db_path: str = "data/newslens.db", fact_checks_path: str = "data/fact_checks.json"
+        self,
+        db_path: str = "data/newslens.db",
+        fact_checks_path: str = "data/fact_checks.json",
     ):
         self.db = DatabaseManager(db_path=db_path)
         self.gdelt = GdeltClient()
@@ -31,49 +43,77 @@ class NewsLensService:
 
     # --- Ingestion & Storage ---
 
-    def refresh_rss_feeds(self) -> Dict[str, Any]:
-        """Fetches latest stories from all configured Indian publisher RSS feeds and stores them."""
-        logger.info("Executing RSS feed refresh...")
+    def refresh_rss_feeds(self) -> RefreshResult:
+        """Synchronously polls all configured Indian publisher RSS feeds.
+
+        Upserts articles into SQLite, records per-feed health outcomes, and
+        returns a structured RefreshResult preserving partial successes.
+        """
+        start_time = time.perf_counter()
+        logger.info("Executing synchronous RSS feed refresh...")
         result = self.rss.fetch_all()
-        articles = result.get("articles", [])
-        stats = result.get("stats", {})
+        articles: List[NormalizedArticle] = result.get("articles", [])
+        stats: Dict[str, Dict[str, Any]] = result.get("stats", {})
+        provider_results: Dict[str, ProviderFetchResult] = result.get("provider_results", {})
 
         inserted_count = self.db.upsert_articles(articles)
 
-        # Update source statuses
+        # Update per-source status in SQLite
         for name, info in stats.items():
             self.db.record_source_status(
                 source_name=name,
                 source_type="rss",
-                status=info.get("status", "unknown"),
+                status=info.get("status", STATUS_PROVIDER_UNAVAILABLE),
                 items_fetched=info.get("count", 0),
                 error_message=info.get("error"),
             )
 
-        return {"total_fetched": len(articles), "new_stored": inserted_count, "stats": stats}
+        duration_ms = (time.perf_counter() - start_time) * 1000
+        all_succeeded = (
+            all(res.status == STATUS_SUCCESS for res in provider_results.values())
+            if provider_results
+            else False
+        )
+        all_failed = (
+            all(res.status != STATUS_SUCCESS for res in provider_results.values())
+            if provider_results
+            else True
+        )
 
-    def search_gdelt(self, query: str, max_records: int = 25) -> List[NormalizedArticle]:
+        return RefreshResult(
+            total_fetched=len(articles),
+            new_stored=inserted_count,
+            duration_ms=duration_ms,
+            provider_results=provider_results,
+            all_succeeded=all_succeeded,
+            all_failed=all_failed,
+        )
+
+    def search_gdelt(self, query: str, max_records: int = 25) -> ProviderFetchResult:
         """Queries GDELT Doc API for Indian news topic and persists results."""
         if not query or not query.strip():
-            return []
+            return ProviderFetchResult(
+                source_id="gdelt",
+                source_name="GDELT",
+                source_type="gdelt",
+                status=STATUS_NO_RESULTS,
+                articles=[],
+                items_count=0,
+                duration_ms=0.0,
+            )
 
-        articles = self.gdelt.search_articles(keyword=query, max_records=max_records)
-        if articles:
-            self.db.upsert_articles(articles)
-            self.db.record_source_status(
-                source_name=f"GDELT: {query}",
-                source_type="gdelt",
-                status="success",
-                items_fetched=len(articles),
-            )
-        else:
-            self.db.record_source_status(
-                source_name=f"GDELT: {query}",
-                source_type="gdelt",
-                status="empty_or_rate_limited",
-                items_fetched=0,
-            )
-        return articles
+        result = self.gdelt.fetch_articles(keyword=query.strip(), max_records=max_records)
+        if result.articles:
+            self.db.upsert_articles(result.articles)
+
+        self.db.record_source_status(
+            source_name=f"GDELT: {query.strip()}",
+            source_type="gdelt",
+            status=result.status,
+            items_fetched=result.items_count,
+            error_message=result.error_message,
+        )
+        return result
 
     def submit_manual_article(
         self,
@@ -87,9 +127,9 @@ class NewsLensService:
         dummy_url = (
             canonicalize_url(url.strip())
             if url and url.strip()
-            else f"manual://{hashlib.sha256(title.encode()).hexdigest()[:32]}"
+            else f"manual://{hashlib.sha256(title.encode('utf-8')).hexdigest()[:32]}"
         )
-        art_id = f"manual_{hashlib.sha256(dummy_url.encode()).hexdigest()[:16]}"
+        art_id = f"manual_{hashlib.sha256(dummy_url.encode('utf-8')).hexdigest()[:16]}"
 
         article = NormalizedArticle(
             id=art_id,
@@ -107,13 +147,71 @@ class NewsLensService:
         self.db.upsert_article(article)
         return article
 
+    def query_monitor_articles(
+        self,
+        query: Optional[str] = None,
+        source_type: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+        sort_order: str = "Recency",
+    ) -> Dict[str, Any]:
+        """Provides a clean, composable service contract for the News Monitor.
+
+        Returns:
+          - articles: List of matching NormalizedArticle objects for current page.
+          - total_matching: Total matching records across the entire dataset.
+          - page: Current page number (1-indexed).
+          - page_size: Limit passed.
+          - applied_filters: Dictionary summarizing applied parameters.
+        """
+        clean_query = query.strip() if query and query.strip() else None
+        clean_source = source_type.strip().lower() if source_type and source_type.strip() else None
+        if clean_source in ("all", "none"):
+            clean_source = None
+
+        ascending = "Chronological" in sort_order or "Oldest" in sort_order
+        articles = self.db.get_articles(
+            query=clean_query,
+            source_type=clean_source,
+            limit=limit,
+            offset=offset,
+            order_by="ingested_at",
+            ascending=ascending,
+        )
+        total_matching = self.db.count_matching_articles(
+            query=clean_query,
+            source_type=clean_source,
+        )
+
+        return {
+            "articles": articles,
+            "total_matching": total_matching,
+            "page": (offset // limit) + 1 if limit > 0 else 1,
+            "page_size": limit,
+            "applied_filters": {
+                "query": clean_query,
+                "source_type": clean_source,
+                "sort_order": sort_order,
+            },
+        }
+
     def get_recent_articles(
-        self, query: Optional[str] = None, source_type: Optional[str] = None, limit: int = 50
+        self,
+        query: Optional[str] = None,
+        source_type: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
     ) -> List[NormalizedArticle]:
         """Fetches stored articles from SQLite."""
-        return self.db.get_articles(query=query, source_type=source_type, limit=limit)
+        return self.db.get_articles(
+            query=query,
+            source_type=source_type,
+            limit=limit,
+            offset=offset,
+        )
 
     def get_source_statuses(self) -> List[Dict[str, Any]]:
+        """Returns recorded source health statuses."""
         return self.db.get_all_source_status()
 
     # --- Analysis & Screening ---
