@@ -167,7 +167,7 @@ def render_news_monitor_page(service: NewsLensService) -> None:
         st.markdown(
             f"""
             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:14px; font-size:11px;">
-                <span style="color:#667085; font-weight:600;">Active Criteria:</span>
+                <span style="color:#667085; font-weight:600;">Active Filters:</span>
                 {criteria_badges}
             </div>
             """,
