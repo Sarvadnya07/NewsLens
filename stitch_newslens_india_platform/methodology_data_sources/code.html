@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-variant":"#d9e3f6","primary":"#00253d","outline":"#73777e","inverse-surface":"#273140","surface-dim":"#d0daee","inverse-on-surface":"#ebf1ff","secondary-fixed":"#9af1f5","tertiary-fixed":"#ffddb8","on-secondary":"#ffffff","on-error-container":"#93000a","surface-container-high":"#dfe9fc","surface-container":"#e6eeff","on-tertiary-fixed":"#2a1700","on-tertiary-container":"#d79439","on-surface":"#121c2a","secondary":"#00696d","on-error":"#ffffff","on-secondary-container":"#007074","surface-container-low":"#eff3ff","on-primary-fixed":"#001d32","secondary-fixed-dim":"#7ed4d8","tertiary-fixed-dim":"#ffb95f","tertiary-container":"#523100","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff","inverse-primary":"#a9caeb","surface-tint":"#41617e","primary-fixed":"#cde5ff","on-primary-fixed-variant":"#284a65","background":"#f8f9ff","outline-variant":"#c2c7ce","surface-bright":"#f8f9ff","error":"#ba1a1a","on-primary-container":"#85a5c5","tertiary":"#341e00","on-secondary-fixed-variant":"#004f52","on-primary":"#ffffff","on-secondary-fixed":"#002021","surface-container-highest":"#d9e3f6","primary-container":"#183b56","on-surface-variant":"#42474d","on-tertiary-fixed-variant":"#653e00","on-background":"#121c2a","primary-fixed-dim":"#a9caeb","error-container":"#ffdad6","secondary-container":"#9af1f5","surface":"#f8f9ff"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter-desktop":"1.5rem","space-xl":"2.5rem","space-sm":"0.5rem","space-md":"1rem","space-xs":"0.25rem","margin-desktop":"2rem","margin":"1rem","gutter":"1rem","space-lg":"1.5rem"},"fontFamily":{"headline-lg-mobile":["Newsreader"],"body-sm":["Inter"],"body-md":["Inter"],"label-lg":["Inter"],"label-md":["Inter"],"label-sm":["Inter"],"headline-xl-mobile":["Newsreader"],"headline-sm":["Newsreader"],"headline-md":["Newsreader"],"body-lg":["Inter"],"headline-lg":["Newsreader"],"headline-xl":["Newsreader"]},"fontSize":{"headline-lg-mobile":["22px",{"lineHeight":"30px","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","fontWeight":"600"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"500"}],"headline-md":["22px",{"lineHeight":"28px","fontWeight":"500"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["28px",{"lineHeight":"36px","fontWeight":"500"}],"headline-xl":["36px",{"lineHeight":"44px","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-60 bg-surface-container-lowest flex flex-col justify-between z-50 shadow-[0_1px_8px_rgba(24,59,86,0.06)]"><div class="flex flex-col"><div class="p-space-md bg-surface-container-lowest"><div class="flex items-center gap-space-sm mb-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XpPN2qV7JXLufRw3ttwwgI7TYbQyl7OaNTyjfqOz1cejtyBdFhlrGxvFbMwxc_qmN-_tCxb2rsriiT8z8lY-N-pP7rTKfiVwLEWMvxvMuZx0D9AevMnaylPDzewLdMkP7GrYWB7tTC71pzwPL5o3VFfsCI69lv4kXyk90gQ7cGA5D2Wsm4WWQiU1yazP5EwIws2tPWsuFmlAjCuQJMCf45XwYhGgIsvQ7ddUpUKAZjeg"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-primary leading-tight">NewsLens India</span></div></div><p class="font-label-sm text-label-sm text-on-surface-variant leading-tight px-space-xs">See the coverage. Examine the evidence.</p></div><div class="px-space-md py-space-xs"><span class="font-label-sm text-label-sm tracking-widest uppercase text-outline">Investigation Desk</span></div><nav class="px-space-sm space-y-space-xs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="news-monitor" href="#"><span class="material-symbols-outlined text-[18px]">radar</span><span>News Monitor</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="analyze-article" href="#"><span class="material-symbols-outlined text-[18px]">biotech</span><span>Analyze Article</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="evidence-coverage" href="#"><span class="material-symbols-outlined text-[18px]">difference</span><span>Evidence &amp; Coverage</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg transition-colors bg-primary-container text-on-primary font-semibold" data-path="methodology" href="#"><span class="material-symbols-outlined text-[18px]">menu_book</span><span>Methodology</span></a></nav></div><div class="p-space-md bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-container-high text-primary font-label-sm text-label-sm"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Standalone Research</span><span class="font-label-sm text-label-sm text-outline">v0.8.2-research</span></div><div class="mt-space-xs"><span class="inline-block w-full text-center px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold tracking-wider uppercase">DEMO DATASET ACTIVE</span></div><div class="text-center mt-space-xs"><span class="font-label-sm text-label-sm text-outline">Indian Media Observatory</span></div></div></aside><div class="pl-60"><header class="fixed top-0 left-60 right-0 h-16 bg-surface-container-lowest z-40 px-gutter-desktop flex items-center justify-between shadow-[0_1px_8px_rgba(24,59,86,0.04)]"><div class="flex items-center gap-space-md flex-1 max-w-xl"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full pl-9 pr-4 py-1.5 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-secondary transition-all" placeholder="Search Indian news topics, claims, keywords..." type="text"/></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px] text-secondary">shield</span><span>Evidence First • Probabilistic Screening</span></div><div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm pl-space-xs"><button class="flex items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors" title="Refresh Sources" type="button"><span class="material-symbols-outlined text-[18px]">sync</span></button><span class="hidden lg:inline text-outline">Last sync: Today 11:42 IST</span></div><div class="pl-space-xs flex items-center gap-space-sm"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XpPN2qV7JXLufRw3ttwwgI7TYbQyl7OaNTyjfqOz1cejtyBdFhlrGxvFbMwxc_qmN-_tCxb2rsriiT8z8lY-N-pP7rTKfiVwLEWMvxvMuZx0D9AevMnaylPDzewLdMkP7GrYWB7tTC71pzwPL5o3VFfsCI69lv4kXyk90gQ7cGA5D2Wsm4WWQiU1yazP5EwIws2tPWsuFmlAjCuQJMCf45XwYhGgIsvQ7ddUpUKAZjeg"/></div></div></header><main class="w-full pt-16 bg-background min-h-screen px-gutter-desktop py-space-lg"><div class="flex flex-col w-full">
+<div class="flex flex-col gap-space-md mb-space-xl">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-lg bg-surface-container-high text-secondary font-label-sm text-label-sm uppercase tracking-wider font-semibold">Institutional Blueprint</span>
+<span class="text-outline font-label-sm text-label-sm">•</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Standard Specification 1.4-R</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest shadow-sm text-on-surface font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+          Formal Peer-Review Draft
+        </span>
+<button class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm shadow-sm hover:opacity-95 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[15px]">download</span>
+          Export Whitepaper PDF
+        </button>
+</div>
+</div>
+<div>
+<h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Methodology &amp; Data Sources</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-4xl mt-space-xs">
+        Technical architecture, probabilistic machine learning pipeline, curated dataset corpora, and empirical limitations governing the Indian Media Observatory screening framework.
+      </p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-xl">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">Stage 01</span>
+<span class="material-symbols-outlined text-secondary text-[22px]">cloud_sync</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mt-space-xs">1. Ingestion Engine</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Continuous querying of GDELT Project v2 API alongside vetted national and regional RSS feeds with deduplication, temporal sorting, and geographic geocoding across Indian state beats.
+        </p>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-container-low p-space-xs rounded-lg flex items-center justify-between text-on-surface font-label-sm text-label-sm">
+<span class="text-outline">Latency Target</span>
+<span class="font-semibold text-secondary tabular-nums">&lt; 180s Poll Rate</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">Stage 02</span>
+<span class="material-symbols-outlined text-secondary text-[22px]">psychology</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mt-space-xs">2. Preprocessing &amp; NLP</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Indic script normalization, entity recognition (NER), noise striping, and TF-IDF vectorization with unigram and bigram extraction (1, 2-grams) filtered through custom stopword lexicons.
+        </p>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-container-low p-space-xs rounded-lg flex items-center justify-between text-on-surface font-label-sm text-label-sm">
+<span class="text-outline">Feature Dim</span>
+<span class="font-semibold text-secondary tabular-nums">48,000 Vocab Max</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">Stage 03</span>
+<span class="material-symbols-outlined text-secondary text-[22px]">model_training</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mt-space-xs">3. Probabilistic Classifier</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Logistic Regression baseline with L2 regularization penalty trained on curated Indian &amp; global news framing datasets, outputting calibrated confidence scores without categorical binaries.
+        </p>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-container-low p-space-xs rounded-lg flex items-center justify-between text-on-surface font-label-sm text-label-sm">
+<span class="text-outline">Algorithm</span>
+<span class="font-semibold text-secondary">Logit (L2 Solver: SAGA)</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">Stage 04</span>
+<span class="material-symbols-outlined text-secondary text-[22px]">dataset</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary mt-space-xs">4. Multi-Source Evidence</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Cosine similarity matching against external fact-check registries (IFCN signatories) and publisher syndication clusters to isolate original investigative journalism from echo chambers.
+        </p>
+</div>
+<div class="mt-space-md pt-space-sm bg-surface-container-low p-space-xs rounded-lg flex items-center justify-between text-on-surface font-label-sm text-label-sm">
+<span class="text-outline">Corroboration</span>
+<span class="font-semibold text-secondary">Cosine ≥ 0.76 Index</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-xl">
+<div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-lg">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary">System Architecture Pipeline</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Triple-tier ingestion, vectorization inference, and cross-verification topology</p>
+</div>
+</div>
+<div class="flex items-center gap-2 font-label-sm text-label-sm text-outline">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span> Live Microservices
+        <span class="w-2.5 h-2.5 rounded-full bg-surface-variant ml-2"></span> Batch Synchronization
+      </div>
+</div>
+<div class="w-full bg-surface-container-low rounded-xl p-space-lg overflow-x-auto">
+<div class="min-w-[860px] flex flex-col gap-space-lg">
+<div class="flex items-center justify-between relative">
+<div class="w-1/3 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Intake Pipe A</span>
+<span class="material-symbols-outlined text-[16px] text-outline">rss_feed</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">GDELT + RSS Ingestion</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Multi-lingual wires, state dispatches &amp; GDELT v2 Doc API stream</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-sm">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 160 24">
+<line stroke="currentColor" stroke-dasharray="4 4" stroke-width="2" x1="0" x2="148" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="148,7 160,12 148,17"></polygon>
+</svg>
+</div>
+<div class="w-1/3 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Processing Unit</span>
+<span class="material-symbols-outlined text-[16px] text-outline">filter_alt</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">Normalization &amp; Deduplication</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">SimHash cluster indexing, strip tracking queries, date canonicalization</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-sm">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 160 24">
+<line stroke="currentColor" stroke-dasharray="4 4" stroke-width="2" x1="0" x2="148" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="148,7 160,12 148,17"></polygon>
+</svg>
+</div>
+<div class="w-1/3 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Persistence Store</span>
+<span class="material-symbols-outlined text-[16px] text-outline">database</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">SQLite / Data Store</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Full-text searchable registry, archival metadata, and source authority logs</div>
+</div>
+</div>
+<div class="flex items-center justify-between relative">
+<div class="w-1/4 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Analyst Query</span>
+<span class="material-symbols-outlined text-[16px] text-outline">edit_note</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">User Text Input</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Headline, article body, or URL pasted for forensic inspection</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-xs">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 100 24">
+<line stroke="currentColor" stroke-width="2" x1="0" x2="88" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="88,7 100,12 88,17"></polygon>
+</svg>
+</div>
+<div class="w-1/4 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Transformation</span>
+<span class="material-symbols-outlined text-[16px] text-outline">transform</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">Preprocessing &amp; TF-IDF</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Tokenization, Lemmatization, sub-linear TF scaling, n-gram weighting</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-xs">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 100 24">
+<line stroke="currentColor" stroke-width="2" x1="0" x2="88" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="88,7 100,12 88,17"></polygon>
+</svg>
+</div>
+<div class="w-1/4 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Classifier</span>
+<span class="material-symbols-outlined text-[16px] text-outline">tune</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">Logistic Regression</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">L2 calibrated proba vector across sensationalist framing markers</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-xs">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 100 24">
+<line stroke="currentColor" stroke-width="2" x1="0" x2="88" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="88,7 100,12 88,17"></polygon>
+</svg>
+</div>
+<div class="w-1/4 bg-surface-container-high p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-primary">Inference Output</span>
+<span class="material-symbols-outlined text-[16px] text-secondary">radar</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">Screening Signal</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Non-binary confidence interval and linguistic anomaly score</div>
+</div>
+</div>
+<div class="flex items-center justify-between relative">
+<div class="w-1/3 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Evidence Verification</span>
+<span class="material-symbols-outlined text-[16px] text-outline">fact_check</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">Evidence Engine</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Active indexing of accredited news wires (PTI, ANI, regional presses)</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-sm">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 160 24">
+<line stroke="currentColor" stroke-dasharray="4 4" stroke-width="2" x1="0" x2="148" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="148,7 160,12 148,17"></polygon>
+</svg>
+</div>
+<div class="w-1/3 bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Context Synthesis</span>
+<span class="material-symbols-outlined text-[16px] text-outline">library_books</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-primary">Fact-Check &amp; Cluster Match</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Cosine matrix against published IFCN findings &amp; syndication clusters</div>
+</div>
+<div class="flex-1 flex items-center justify-center px-space-sm">
+<svg class="w-full h-8 text-secondary" fill="none" viewbox="0 0 160 24">
+<line stroke="currentColor" stroke-dasharray="4 4" stroke-width="2" x1="0" x2="148" y1="12" y2="12"></line>
+<polygon fill="currentColor" points="148,7 160,12 148,17"></polygon>
+</svg>
+</div>
+<div class="w-1/3 bg-primary text-on-primary p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary-fixed">Target Presentation</span>
+<span class="material-symbols-outlined text-[16px] text-surface-variant">terminal</span>
+</div>
+<div class="font-label-lg text-label-lg font-bold text-surface-container-lowest">Streamlit Dossier UI</div>
+<div class="font-body-sm text-body-sm text-surface-variant mt-1">Synchronous visual breakdown, claims drawer &amp; audit evidence logs</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mb-space-xl">
+<div class="lg:col-span-8 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary">Model Performance &amp; Calibration</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Empirical validation metrics across multi-fold stratified Indian media splits</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold">
+            Validation v2.1
+          </span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-space-sm px-space-md rounded-l-lg">Metric</th>
+<th class="py-space-sm px-space-md">Evaluation Score</th>
+<th class="py-space-sm px-space-md">Baseline Random</th>
+<th class="py-space-sm px-space-md rounded-r-lg">Validation Set Description</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm divide-y-0">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-space-md font-semibold text-primary">Accuracy</td>
+<td class="py-3 px-space-md font-bold text-secondary tabular-nums">84.2%</td>
+<td class="py-3 px-space-md text-outline tabular-nums">50.0%</td>
+<td class="py-3 px-space-md text-on-surface-variant">K-fold stratified cross-validation (n=4,200 labeled samples)</td>
+</tr>
+<tr class="bg-surface-container-low/40 hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-space-md font-semibold text-primary">Precision (Macro)</td>
+<td class="py-3 px-space-md font-bold text-secondary tabular-nums">82.7%</td>
+<td class="py-3 px-space-md text-outline tabular-nums">50.0%</td>
+<td class="py-3 px-space-md text-on-surface-variant">Target class lexical framing detection with conservative false-alarm control</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-space-md font-semibold text-primary">Recall (Macro)</td>
+<td class="py-3 px-space-md font-bold text-secondary tabular-nums">85.1%</td>
+<td class="py-3 px-space-md text-outline tabular-nums">50.0%</td>
+<td class="py-3 px-space-md text-on-surface-variant">Misleading framing detection sensitivity under diverse vernacular translation</td>
+</tr>
+<tr class="bg-surface-container-low/40 hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-space-md font-semibold text-primary">Macro F1-Score</td>
+<td class="py-3 px-space-md font-bold text-secondary tabular-nums">0.838</td>
+<td class="py-3 px-space-md text-outline tabular-nums">0.500</td>
+<td class="py-3 px-space-md text-on-surface-variant">Harmonic mean across balanced test folds without class re-weighting penalty</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="mt-space-md p-space-sm bg-surface-container-low rounded-lg flex items-start gap-space-xs text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">info</span>
+<span>
+<strong class="text-primary font-semibold">Methodological Caveat:</strong> Evaluation figures represent experimental test-bench validation; live production metrics depend on real-world news drift, adversarial phrasing, and domain novelty.
+        </span>
+</div>
+</div>
+<div class="lg:col-span-4 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">donut_large</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary">Dataset Corpus Split</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Curated benchmark composition</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center py-space-sm">
+<div class="relative w-36 h-36">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#DFE9FC" stroke-width="12"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#00696d" stroke-dasharray="251.2" stroke-dashoffset="100.48" stroke-width="12"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#183b56" stroke-dasharray="251.2" stroke-dashoffset="188.4" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-headline-sm text-headline-sm text-primary font-bold tabular-nums">4,200</span>
+<span class="font-label-sm text-label-sm text-outline">Articles</span>
+</div>
+</div>
+<div class="w-full mt-space-md space-y-2">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span class="text-on-surface">Indian National &amp; State Press</span>
+</div>
+<span class="font-semibold text-primary tabular-nums">60% (2,520)</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+<span class="text-on-surface">Fact-Check Repositories (IFCN)</span>
+</div>
+<span class="font-semibold text-primary tabular-nums">25% (1,050)</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-high"></span>
+<span class="text-on-surface">Regional Vernacular Feeds</span>
+</div>
+<span class="font-semibold text-primary tabular-nums">15% (630)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-space-xs bg-surface-container-low rounded-lg text-center mt-space-sm">
+<span class="font-label-sm text-label-sm text-outline">Stratified sampling interval: Q1 2023 - Q4 2024</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-xl">
+<div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">balance</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary">System Limitations &amp; Ethical Principles</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Core scientific constraints governing safe deployment in investigative media workflows</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">
+        Ethical AI Framework v1.0
+      </span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-space-xs text-primary font-label-lg text-label-lg font-bold">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary font-label-sm text-label-sm">1</span>
+            No Automated Truth Claims
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Statistical machine learning models evaluate lexical patterns, stylistic sensationalism, and linguistic markers; they cannot independently evaluate empirical real-world truth or judicial validity.
+          </p>
+</div>
+<div class="mt-space-sm flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[15px]">verified_user</span>
+          Non-Arbitration Policy
+        </div>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-space-xs text-primary font-label-lg text-label-lg font-bold">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary font-label-sm text-label-sm">2</span>
+            Dataset Bias
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Training sets may over-represent metropolitan English-language journalism styles, introducing subtle regional calibration skews when evaluating vernacular translations from Hindi, Tamil, or Bengali.
+          </p>
+</div>
+<div class="mt-space-sm flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[15px]">language</span>
+          Linguistic Drift Monitored
+        </div>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-space-xs text-primary font-label-lg text-label-lg font-bold">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary font-label-sm text-label-sm">3</span>
+            Syndication False Corroboration
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Wire service dispatches (PTI, ANI) reprinted verbatim across multiple digital news portals do not constitute independent evidentiary confirmations; the system clusters these into single-source nodes.
+          </p>
+</div>
+<div class="mt-space-sm flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[15px]">hub</span>
+          Cluster Aggregation Active
+        </div>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-space-xs text-primary font-label-lg text-label-lg font-bold">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary font-label-sm text-label-sm">4</span>
+            Fact-Check Completeness
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Absence of a published external fact-check does not imply factual correctness. Emerging rumors and niche dispatches may circulate for days before professional IFCN verification bureaus publish analysis.
+          </p>
+</div>
+<div class="mt-space-sm flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[15px]">hourglass_empty</span>
+          Coverage Incompleteness Risk
+        </div>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-space-xs text-primary font-label-lg text-label-lg font-bold">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary font-label-sm text-label-sm">5</span>
+            Temporal Lag
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Emerging breaking news inevitably exhibits evidentiary vacuum in the immediate 30-90 minutes following a major disaster or political event, necessitating explicit cautionary analyst alerts.
+          </p>
+</div>
+<div class="mt-space-sm flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[15px]">schedule</span>
+          Real-time Caution Threshold
+        </div>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-space-xs text-primary font-label-lg text-label-lg font-bold">
+<span class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary font-label-sm text-label-sm">6</span>
+            Human-in-the-Loop Requirement
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            The platform is explicitly designed as an investigative workbench and decision-support instrument for credentialed journalists and researchers, not an autonomous automated moderation censor.
+          </p>
+</div>
+<div class="mt-space-sm flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[15px]">person_check</span>
+          Editorial Discretion Required
+        </div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mb-space-lg">
+<div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-primary">Streamlit Implementation Blueprint</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Core stack specifications and executable production pipeline</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-surface-container-high font-label-sm text-label-sm text-on-surface font-mono">Python 3.10+</span>
+<span class="px-2.5 py-1 rounded bg-surface-container-high font-label-sm text-label-sm text-on-surface font-mono">Streamlit 1.32+</span>
+<span class="px-2.5 py-1 rounded bg-surface-container-high font-label-sm text-label-sm text-on-surface font-mono">Scikit-learn</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<div class="lg:col-span-4 bg-surface-container-low p-space-md rounded-xl flex flex-col justify-between">
+<div>
+<span class="font-label-sm text-label-sm uppercase font-semibold text-secondary">Architecture Stack</span>
+<h4 class="font-label-lg text-label-lg font-bold text-primary mt-1 mb-space-xs">Production Dependencies</h4>
+<ul class="space-y-2 mt-space-sm font-body-sm text-body-sm text-on-surface-variant">
+<li class="flex items-center justify-between">
+<span class="font-medium text-on-surface">Data Store:</span>
+<span class="font-mono text-[12px] bg-surface-container-lowest px-2 py-0.5 rounded shadow-sm">SQLite (WAL mode)</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-medium text-on-surface">News Feeder:</span>
+<span class="font-mono text-[12px] bg-surface-container-lowest px-2 py-0.5 rounded shadow-sm">feedparser 6.0</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-medium text-on-surface">Global Query:</span>
+<span class="font-mono text-[12px] bg-surface-container-lowest px-2 py-0.5 rounded shadow-sm">GDELT Doc 2.0 API</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-medium text-on-surface">Vectorization:</span>
+<span class="font-mono text-[12px] bg-surface-container-lowest px-2 py-0.5 rounded shadow-sm">TfidfVectorizer(1,2)</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-medium text-on-surface">Model Weights:</span>
+<span class="font-mono text-[12px] bg-surface-container-lowest px-2 py-0.5 rounded shadow-sm">joblib serialize</span>
+</li>
+</ul>
+</div>
+<div class="mt-space-md p-space-xs bg-surface-container-lowest rounded-lg border-0 shadow-sm flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Pipeline Threading</span>
+<span class="font-label-sm text-label-sm font-semibold text-secondary">Background Daemon (60s)</span>
+</div>
+</div>
+<div class="lg:col-span-8 bg-inverse-surface rounded-xl p-space-md text-inverse-on-surface overflow-x-auto shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary-fixed font-mono">pipeline_runner.py</span>
+<span class="font-label-sm text-label-sm text-outline-variant font-mono">Scikit-learn &amp; Streamlit</span>
+</div>
+<pre class="font-mono text-[12px] leading-relaxed text-inverse-on-surface overflow-x-auto"><code><span class="text-secondary-fixed">import</span> streamlit <span class="text-secondary-fixed">as</span> st
+<span class="text-secondary-fixed">from</span> sklearn.feature_extraction.text <span class="text-secondary-fixed">import</span> TfidfVectorizer
+<span class="text-secondary-fixed">from</span> sklearn.linear_model <span class="text-secondary-fixed">import</span> LogisticRegression
+<span class="text-secondary-fixed">import</span> sqlite3, feedparser
+
+<span class="text-outline-variant"># 1. Ingestion &amp; SQLite Cache Setup</span>
+<span class="text-secondary-fixed">@st.cache_resource</span>
+<span class="text-inverse-primary">def</span> <span class="text-secondary-fixed">init_pipeline</span>():
+    vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=48000, sublinear_tf=True)
+    classifier = LogisticRegression(C=1.0, penalty=<span class="text-tertiary-fixed">'l2'</span>, solver=<span class="text-tertiary-fixed">'saga'</span>)
+    <span class="text-secondary-fixed">return</span> vectorizer, classifier
+
+<span class="text-outline-variant"># 2. Forensic Multi-Source Screening Signal</span>
+<span class="text-inverse-primary">def</span> <span class="text-secondary-fixed">evaluate_article</span>(raw_text: str, vectorizer, classifier):
+    vec = vectorizer.transform([raw_text])
+    probabilities = classifier.predict_proba(vec)[0]  <span class="text-outline-variant"># Returns [p_standard, p_sensational]</span>
+    <span class="text-secondary-fixed">return</span> {
+        <span class="text-tertiary-fixed">"framing_entropy"</span>: float(probabilities[1]),
+        <span class="text-tertiary-fixed">"calibrated_status"</span>: <span class="text-tertiary-fixed">"Corroborated"</span> <span class="text-secondary-fixed">if</span> probabilities[1] &lt; 0.35 <span class="text-secondary-fixed">else</span> <span class="text-tertiary-fixed">"Disputed Context"</span>
+    }</code></pre>
+<div class="mt-2 flex items-center justify-between text-[11px] text-outline-variant font-mono">
+<span>License: CC BY-NC 4.0 Institutional Academic Research</span>
+<span>Zero Black-Box Guarantees</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm py-space-sm px-space-xs">
+<span>Indian Media Observatory • Laboratory for Information Ecosystem Forensics</span>
+<span>Document Revision ID: 2025.04.REC-994</span>
+</div>
+</div></main></div></body></html>

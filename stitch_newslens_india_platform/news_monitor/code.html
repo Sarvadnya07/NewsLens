@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-variant":"#d9e3f6","primary":"#00253d","outline":"#73777e","inverse-surface":"#273140","surface-dim":"#d0daee","inverse-on-surface":"#ebf1ff","secondary-fixed":"#9af1f5","tertiary-fixed":"#ffddb8","on-secondary":"#ffffff","on-error-container":"#93000a","surface-container-high":"#dfe9fc","surface-container":"#e6eeff","on-tertiary-fixed":"#2a1700","on-tertiary-container":"#d79439","on-surface":"#121c2a","secondary":"#00696d","on-error":"#ffffff","on-secondary-container":"#007074","surface-container-low":"#eff3ff","on-primary-fixed":"#001d32","secondary-fixed-dim":"#7ed4d8","tertiary-fixed-dim":"#ffb95f","tertiary-container":"#523100","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff","inverse-primary":"#a9caeb","surface-tint":"#41617e","primary-fixed":"#cde5ff","on-primary-fixed-variant":"#284a65","background":"#f8f9ff","outline-variant":"#c2c7ce","surface-bright":"#f8f9ff","error":"#ba1a1a","on-primary-container":"#85a5c5","tertiary":"#341e00","on-secondary-fixed-variant":"#004f52","on-primary":"#ffffff","on-secondary-fixed":"#002021","surface-container-highest":"#d9e3f6","primary-container":"#183b56","on-surface-variant":"#42474d","on-tertiary-fixed-variant":"#653e00","on-background":"#121c2a","primary-fixed-dim":"#a9caeb","error-container":"#ffdad6","secondary-container":"#9af1f5","surface":"#f8f9ff"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter-desktop":"1.5rem","space-xl":"2.5rem","space-sm":"0.5rem","space-md":"1rem","space-xs":"0.25rem","margin-desktop":"2rem","margin":"1rem","gutter":"1rem","space-lg":"1.5rem"},"fontFamily":{"headline-lg-mobile":["Newsreader"],"body-sm":["Inter"],"body-md":["Inter"],"label-lg":["Inter"],"label-md":["Inter"],"label-sm":["Inter"],"headline-xl-mobile":["Newsreader"],"headline-sm":["Newsreader"],"headline-md":["Newsreader"],"body-lg":["Inter"],"headline-lg":["Newsreader"],"headline-xl":["Newsreader"]},"fontSize":{"headline-lg-mobile":["22px",{"lineHeight":"30px","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","fontWeight":"600"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"500"}],"headline-md":["22px",{"lineHeight":"28px","fontWeight":"500"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["28px",{"lineHeight":"36px","fontWeight":"500"}],"headline-xl":["36px",{"lineHeight":"44px","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-60 bg-surface-container-lowest flex flex-col justify-between z-50 shadow-[0_1px_8px_rgba(24,59,86,0.06)]"><div class="flex flex-col"><div class="p-space-md bg-surface-container-lowest"><div class="flex items-center gap-space-sm mb-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XpPN2qV7JXLufRw3ttwwgI7TYbQyl7OaNTyjfqOz1cejtyBdFhlrGxvFbMwxc_qmN-_tCxb2rsriiT8z8lY-N-pP7rTKfiVwLEWMvxvMuZx0D9AevMnaylPDzewLdMkP7GrYWB7tTC71pzwPL5o3VFfsCI69lv4kXyk90gQ7cGA5D2Wsm4WWQiU1yazP5EwIws2tPWsuFmlAjCuQJMCf45XwYhGgIsvQ7ddUpUKAZjeg"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-primary leading-tight">NewsLens India</span></div></div><p class="font-label-sm text-label-sm text-on-surface-variant leading-tight px-space-xs">See the coverage. Examine the evidence.</p></div><div class="px-space-md py-space-xs"><span class="font-label-sm text-label-sm tracking-widest uppercase text-outline">Investigation Desk</span></div><nav class="px-space-sm space-y-space-xs" data-active-classes="bg-primary-container text-on-primary font-semibold"><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="overview" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span>Overview</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg transition-colors bg-primary-container text-on-primary font-semibold" data-path="news-monitor" href="#"><span class="material-symbols-outlined text-[18px]">radar</span><span>News Monitor</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="analyze-article" href="#"><span class="material-symbols-outlined text-[18px]">biotech</span><span>Analyze Article</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="evidence-coverage" href="#"><span class="material-symbols-outlined text-[18px]">difference</span><span>Evidence &amp; Coverage</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="methodology" href="#"><span class="material-symbols-outlined text-[18px]">menu_book</span><span>Methodology</span></a></nav></div><div class="p-space-md bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-container-high text-primary font-label-sm text-label-sm"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Standalone Research</span><span class="font-label-sm text-label-sm text-outline">v0.8.2-research</span></div><div class="mt-space-xs"><span class="inline-block w-full text-center px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold tracking-wider uppercase">DEMO DATASET ACTIVE</span></div><div class="text-center mt-space-xs"><span class="font-label-sm text-label-sm text-outline">Indian Media Observatory</span></div></div></aside><div class="pl-60"><header class="fixed top-0 left-60 right-0 h-16 bg-surface-container-lowest z-40 px-gutter-desktop flex items-center justify-between shadow-[0_1px_8px_rgba(24,59,86,0.04)]"><div class="flex items-center gap-space-md flex-1 max-w-xl"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full pl-9 pr-4 py-1.5 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-secondary transition-all" placeholder="Search Indian news topics, claims, keywords..." type="text"/></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px] text-secondary">shield</span><span>Evidence First • Probabilistic Screening</span></div><div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm pl-space-xs"><button class="flex items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors" title="Refresh Sources" type="button"><span class="material-symbols-outlined text-[18px]">sync</span></button><span class="hidden lg:inline text-outline">Last sync: Today 11:42 IST</span></div><div class="pl-space-xs flex items-center gap-space-sm"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XpPN2qV7JXLufRw3ttwwgI7TYbQyl7OaNTyjfqOz1cejtyBdFhlrGxvFbMwxc_qmN-_tCxb2rsriiT8z8lY-N-pP7rTKfiVwLEWMvxvMuZx0D9AevMnaylPDzewLdMkP7GrYWB7tTC71pzwPL5o3VFfsCI69lv4kXyk90gQ7cGA5D2Wsm4WWQiU1yazP5EwIws2tPWsuFmlAjCuQJMCf45XwYhGgIsvQ7ddUpUKAZjeg"/></div></div></header><main class="w-full pt-16 bg-background min-h-screen px-gutter-desktop py-space-lg"><div class="flex flex-col w-full">
+<!-- Investigation Desk Title & Analytical Meta Strip -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+<div>
+<div class="flex items-center gap-space-xs text-secondary mb-space-xs">
+<span class="material-symbols-outlined text-[16px]">radar</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Continuous News Stream Ledger</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-primary font-semibold tracking-tight">News Monitor</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Discover, audit, and cross-reference recent coverage across the Indian news ecosystem.</p>
+</div>
+<!-- Real-time Source Pulse Metrics -->
+<div class="flex items-center gap-space-sm bg-surface-container-lowest p-space-sm rounded-lg shadow-sm">
+<div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-low rounded">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">GDELT Event Stream: Synced</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container-low rounded">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">RSS Crawlers: 8/9 Online</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline px-1">IST 12:04</span>
+</div>
+</div>
+<!-- Search & Investigative Filter Surface -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-md flex flex-col gap-space-md">
+<!-- Primary Search & Action Bar -->
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-space-sm">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[20px]">manage_search</span>
+<input class="w-full pl-11 pr-4 py-2.5 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest focus:shadow-[0_0_0_2px_#00696d] transition-all" placeholder="Enter a topic, event, person or keyword (e.g., RBI guidelines, viral railway claim, monsoon NDRF)..." type="text" value="All Monitored Streams"/>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-space-xs px-space-md py-2.5 bg-primary-container text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">saved_search</span>
+<span>Search Coverage</span>
+</button>
+<button class="flex items-center gap-space-xs px-3 py-2.5 bg-surface-container-low hover:bg-surface-container-high text-on-surface rounded-lg font-label-md text-label-md transition-colors" title="Refresh Feeds" type="button">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+<span class="hidden sm:inline">Refresh</span>
+</button>
+<button class="flex items-center gap-space-xs px-3 py-2.5 bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface rounded-lg font-label-md text-label-md transition-colors" title="Reset Filters" type="button">
+<span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
+<span class="hidden sm:inline">Reset</span>
+</button>
+</div>
+</div>
+<!-- Structured Research Filter Dropdowns -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm pt-space-xs">
+<!-- Source Filter -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Ingestion Pipe</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low py-2 pl-3 pr-8 rounded-lg font-label-md text-label-md text-on-surface focus:outline-none focus:bg-surface-container-lowest cursor-pointer">
+<option>Source: All (GDELT + RSS)</option>
+<option>Only GDELT v2 Knowledge Graph</option>
+<option>Only National Press Wires (PTI/ANI)</option>
+<option>Fact-Checking Registry (IFCN)</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Date Filter -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Temporal Scope</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low py-2 pl-3 pr-8 rounded-lg font-label-md text-label-md text-on-surface focus:outline-none focus:bg-surface-container-lowest cursor-pointer">
+<option>Date: Past 24 Hours</option>
+<option>Date: Past 6 Hours</option>
+<option>Date: Past 48 Hours</option>
+<option>Date: Past 7 Days</option>
+<option>Custom Date Window...</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Publisher Filter -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Outlet Domain</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low py-2 pl-3 pr-8 rounded-lg font-label-md text-label-md text-on-surface focus:outline-none focus:bg-surface-container-lowest cursor-pointer">
+<option>Publisher: All Major Outlets</option>
+<option>Tier 1 English Dailies</option>
+<option>State Gazette &amp; PIB Directives</option>
+<option>Independent Investigative Platforms</option>
+<option>Regional Hindi / Vernacular</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Sort Filter -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Ranking Metric</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low py-2 pl-3 pr-8 rounded-lg font-label-md text-label-md text-on-surface focus:outline-none focus:bg-surface-container-lowest cursor-pointer">
+<option>Sort: Relevance (Cosine Score)</option>
+<option>Sort: Recency (Chronological)</option>
+<option>Sort: Syndication Volume (Highest)</option>
+<option>Sort: Claim Divergence Index</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Active Filter Chips Bar -->
+<div class="flex flex-wrap items-center gap-space-xs pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline mr-1">Active Criteria:</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-primary font-label-sm text-label-sm">
+<span>Source: GDELT &amp; RSS (Selected)</span>
+<button class="text-on-surface-variant hover:text-error transition-colors" title="Remove filter" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-primary font-label-sm text-label-sm">
+<span>Region: India National</span>
+<button class="text-on-surface-variant hover:text-error transition-colors" title="Remove filter" type="button">✕</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-primary font-label-sm text-label-sm">
+<span>Language: English / Hindi (Romanized)</span>
+<button class="text-on-surface-variant hover:text-error transition-colors" title="Remove filter" type="button">✕</button>
+</span>
+<button class="font-label-sm text-label-sm text-secondary hover:underline ml-1" type="button">Clear all</button>
+</div>
+</div>
+<!-- Streamlit Information Strip (st.info style) -->
+<div class="bg-surface-container-low rounded-lg p-space-md mb-space-md flex items-start gap-space-sm shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[20px] shrink-0 mt-0.5">info</span>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs w-full">
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+<strong class="font-semibold text-on-surface">Methodological Note:</strong> Results aggregate open syndicated feeds and GDELT open-data endpoints. Duplicate reports frequently represent wire distribution (PTI/ANI) rather than independent corroboration.
+      </p>
+<a class="font-label-sm text-label-sm text-secondary whitespace-nowrap hover:underline font-semibold flex items-center gap-0.5 shrink-0" href="#">
+        Review pipeline specs <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Resilience & Feed Health Notice (Streamlit Alert mock) -->
+<div class="bg-tertiary-fixed/40 rounded-lg px-space-md py-space-sm mb-space-lg flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-on-tertiary-container text-[18px]">dns</span>
+<span class="font-body-sm text-body-sm text-on-tertiary-fixed">
+<strong>Ingestion Alert:</strong> Regional RSS Feed <span class="font-medium text-tertiary font-mono">"Regional Express North"</span> response delayed (&gt;2.5s). Data from GDELT v2 and 7 other monitored feeds remain unaffected.
+      </span>
+</div>
+<span class="hidden md:inline font-label-sm text-label-sm text-on-tertiary-container font-semibold uppercase tracking-wider">Graceful Degrade Active</span>
+</div>
+<!-- Stream Ledger Header & View Mode Switcher -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md px-1">
+<div class="flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant">
+<span class="font-semibold text-primary font-label-md text-label-md">48 records identified</span>
+<span>•</span>
+<span>Query: “All Monitored Streams”</span>
+<span>•</span>
+<span class="text-outline">Window: 24h</span>
+</div>
+<!-- Toggle Controls -->
+<div class="flex items-center bg-surface-container-high rounded-lg p-0.5 self-start sm:self-auto">
+<button class="flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs" type="button">
+<span class="material-symbols-outlined text-[16px]">view_agenda</span>
+<span>List View (Detailed)</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1 rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">table_rows</span>
+<span>Dense Table View</span>
+</button>
+</div>
+</div>
+<!-- Articles List / Dossier Ledger Grid -->
+<div class="flex flex-col gap-space-md mb-space-xl">
+<!-- Dossier Card 1: Fact Check Link & High Syndication -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col lg:flex-row gap-space-lg">
+<!-- Main Analysis Column -->
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<!-- Source Tagging Header -->
+<div class="flex flex-wrap items-center gap-space-xs mb-space-sm">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px] text-secondary">feed</span>
+                RSS Feed
+              </span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">PIB FactCheck / The Hindu</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-sm text-body-sm text-outline">Today, 08:30 IST</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">hub</span>
+                4 Syndicated Outlets
+              </span>
+<!-- Evidence Badge Pill -->
+<span class="ml-auto inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[14px]">fact_check</span>
+                Fact-Check Record Linked
+              </span>
+</div>
+<!-- Headline with Serif Rigor -->
+<h2 class="font-headline-md text-headline-md text-primary font-semibold tracking-tight hover:text-secondary transition-colors cursor-pointer mb-space-xs">
+              Viral Video Alleging Sudden Indian Railways 15% Fare Revision Refuted by Ministry Spokesperson
+            </h2>
+<!-- Editorial Summary Extract -->
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-space-md">
+              Officials stated the circulated video dates back to 2019 and was clipped out of context. Ministry of Railways clarified no general fare hike has been instituted across suburban or mail/express classes. Cross-matched with PIB bulletin reference #RL-4819.
+            </p>
+</div>
+<!-- Bottom Action Suite & Forensic Metrics -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low/50 -mx-space-lg -mb-space-lg p-space-md mt-space-sm">
+<div class="flex items-center gap-space-xs">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-container text-on-primary rounded font-label-sm text-label-sm font-semibold hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">biotech</span>
+<span>Analyze in Model</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded font-label-sm text-label-sm font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">device_hub</span>
+<span>Trace Provenance &amp; Coverage</span>
+</button>
+<a class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary hover:text-on-secondary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>Open Source</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<!-- Evidentiary Corroboration Gauge (Inline SVG Spark) -->
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider hidden sm:inline">Corroboration:</span>
+<div class="flex items-center gap-1.5 bg-surface-container-lowest px-2 py-1 rounded">
+<svg class="w-16 h-2 rounded-full overflow-hidden bg-surface-container" preserveaspectratio="none" viewbox="0 0 100 10">
+<rect class="fill-secondary" height="10" width="92"></rect>
+</svg>
+<span class="font-label-sm text-label-sm font-bold text-secondary font-mono">92%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Analytical Snapshot Thumbnail -->
+<div class="lg:w-56 shrink-0 flex flex-col gap-space-xs">
+<div class="relative w-full h-36 bg-surface-container rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Photographic evidence archive of an Indian Railways locomotive on railway tracks under overcast sky, documentary style, sober muted tones, high clarity, news archival style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0jtWazs316-2icKrb4FtEHb29mZCz5eoR3AXLZIlxphmoQ-uqNvxOjljlltt9dzhfts0dMmtYsFN2PAWdtb-L0ZNAi-hDjff93zEsktXQUk2jnf7vcOtcYhWyrGjG_qx9vpKiKxByXxGp1KprdVCQ8q0dUk1War7syUBA2kDXvHs_clMzXCul7Ei_3JNqOYzptvHCihPx10kYGwdoYkVuDZLOrwbLW1YJHOZoykl_"/>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary/80 text-on-primary font-label-sm text-[10px] tracking-wider uppercase backdrop-blur-sm">Archival Still</span>
+</div>
+<div class="flex items-center justify-between text-outline font-label-sm text-[11px] px-1">
+<span>Doc ID: #IR-2024-884</span>
+<span class="text-secondary font-medium">PIB Disputed Clip</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Dossier Card 2: Regulatory / Financial -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col lg:flex-row gap-space-lg">
+<!-- Main Analysis Column -->
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<!-- Source Tagging Header -->
+<div class="flex flex-wrap items-center gap-space-xs mb-space-sm">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px] text-primary-container">dataset</span>
+                GDELT v2
+              </span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Financial Express</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-sm text-body-sm text-outline">Today, 07:15 IST</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">hub</span>
+                2 Related Sources
+              </span>
+<span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">gavel</span>
+                Regulatory Directive
+              </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-primary font-semibold tracking-tight hover:text-secondary transition-colors cursor-pointer mb-space-xs">
+              Reserve Bank of India Issues Directives on Algorithmic Underwriting Transparency for NBFCs
+            </h2>
+<!-- Editorial Summary Extract -->
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-space-md">
+              The guidance note requires regulated non-banking lenders to maintain auditable logs of credit decisions generated by machine learning models. Board-level oversight mandates emphasize explainability and adverse outcome justification logs.
+            </p>
+</div>
+<!-- Bottom Action Suite -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low/50 -mx-space-lg -mb-space-lg p-space-md mt-space-sm">
+<div class="flex items-center gap-space-xs">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-container text-on-primary rounded font-label-sm text-label-sm font-semibold hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">biotech</span>
+<span>Analyze in Model</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded font-label-sm text-label-sm font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">device_hub</span>
+<span>Trace Provenance &amp; Coverage</span>
+</button>
+<a class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary hover:text-on-secondary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>Open Source</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<!-- Entity Cross-Reference Chips -->
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-[11px] font-mono">Entities: RBI, NBFC, FinTech</span>
+</div>
+</div>
+</div>
+<!-- Analytical Snapshot Visual -->
+<div class="lg:w-56 shrink-0 flex flex-col gap-space-xs">
+<div class="relative w-full h-36 bg-surface-container rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Architectural photograph of the Reserve Bank of India headquarters facade in Mumbai, clean overcast lighting, high dynamic range, institutional dignity, analytical palette of deep navy and stone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_I96UUQC7-ZQZeChEzgO4PzLgXLMEkpqdNGvXfqSxXkfHczepVLx2JhuJjjalLCa8iQMsHBAEWoHqPo3I82Dr_sBV9NwY_pjEqzgfCrBES_2jhgUsqE3oLUbZ7FlhqiwJzOgT5eLWmL_rP0KISmeuCVAYaAAe1FcWkgWHW7LUGpRqbaZuxM09Gj3GYRO98P5XNz1E-EgzAK4mOneNexM080-Y4xMvxDtDLvaCfgi2"/>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary/80 text-on-primary font-label-sm text-[10px] tracking-wider uppercase backdrop-blur-sm">Institutional Wire</span>
+</div>
+<div class="flex items-center justify-between text-outline font-label-sm text-[11px] px-1">
+<span>Doc ID: #RBI-DIR-2024</span>
+<span class="text-secondary font-medium">Gazette Synced</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Dossier Card 3: Disaster Management / National Wire -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col lg:flex-row gap-space-lg">
+<!-- Main Analysis Column -->
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<!-- Source Tagging Header -->
+<div class="flex flex-wrap items-center gap-space-xs mb-space-sm">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px] text-primary-container">dataset</span>
+                GDELT v2
+              </span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Press Trust of India (PTI)</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-sm text-body-sm text-outline">Yesterday, 22:40 IST</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">share</span>
+                Primary Wire Syndication
+              </span>
+<span class="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-fixed/50 text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                First-Party Bulletin
+              </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-primary font-semibold tracking-tight hover:text-secondary transition-colors cursor-pointer mb-space-xs">
+              National Disaster Response Force Mobilizes Rescue Teams in Coastal Gujarat Ahead of Cyclone Alert
+            </h2>
+<!-- Editorial Summary Extract -->
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-space-md">
+              24 self-contained battalions equipped with inflatable rescue boats, tree cutters, and satellite communication transceivers have deployed to vulnerable districts. IMD coastal bulletin indicates sustained winds of 75-85 kmph within 36 hours.
+            </p>
+</div>
+<!-- Bottom Action Suite -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low/50 -mx-space-lg -mb-space-lg p-space-md mt-space-sm">
+<div class="flex items-center gap-space-xs">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-container text-on-primary rounded font-label-sm text-label-sm font-semibold hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">biotech</span>
+<span>Analyze in Model</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded font-label-sm text-label-sm font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">device_hub</span>
+<span>Trace Provenance &amp; Coverage</span>
+</button>
+<a class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary hover:text-on-secondary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>Open Source</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-secondary">location_on</span>
+<span>Kutch, Jamnagar, Dwarka</span>
+</div>
+</div>
+</div>
+<!-- Geo Context / Analytical Snapshot -->
+<div class="lg:w-56 shrink-0 flex flex-col gap-space-xs">
+<div class="relative w-full h-36 bg-surface-container rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="NDRF personnel in orange disaster response uniforms preparing emergency rescue boats along an Indian coastal harbor under gathering storm clouds, documentary photojournalism, realistic natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzFyf4VF7asOirJ1D6A3i9axXZaapH-cWdrsTogyoZOfuQyV_2-Y0KZbXscNhB57kwGZJwrQoOatQu9OP4UbqadInOfGuE_XI1CJP-8aRhKE3VpCcnT1K9uCX6zZJXZArERtZ64yGty7ngelbHv5CYVf6bTstERQKiCeEXp5tAqjnCtJosWYBTdzq_-2yaYEdIv5fOFpuuVzS44DS4IBLbwx3nbqcukBY97ZLcO3R-"/>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary/80 text-on-primary font-label-sm text-[10px] tracking-wider uppercase backdrop-blur-sm">PTI Field Wire</span>
+</div>
+<div class="flex items-center justify-between text-outline font-label-sm text-[11px] px-1">
+<span>Disaster Ref: #NDRF-GJ24</span>
+<span class="text-secondary font-medium">IMD Synced</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Dossier Card 4: Disinformation / Pension Fact-Check -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col lg:flex-row gap-space-lg">
+<!-- Main Analysis Column -->
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<!-- Source Tagging Header -->
+<div class="flex flex-wrap items-center gap-space-xs mb-space-sm">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px] text-secondary">verified_user</span>
+                Fact-Check Archive
+              </span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">BOOM Live / Syndicated</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-sm text-body-sm text-outline">Yesterday, 19:10 IST</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">warning_amber</span>
+                Disinformation Vector
+              </span>
+<!-- Evidence Pill -->
+<span class="ml-auto inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold tracking-wide">
+<span class="material-symbols-outlined text-[14px]">report</span>
+                Misleading Claim Identified
+              </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-primary font-semibold tracking-tight hover:text-secondary transition-colors cursor-pointer mb-space-xs">
+              Social Media Claims Regarding Compulsory Biometric Re-verification for Senior Pensioners Fact-Checked
+            </h2>
+<!-- Editorial Summary Extract -->
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-space-md">
+              Department of Pension clarified that annual life certificate submission remains standard through Jeevan Pramaan portal and doorstep banking agents. Viral WhatsApp forwards alleging forfeiture of December pensions without biometric re-enrollment are completely unfounded.
+            </p>
+</div>
+<!-- Bottom Action Suite -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low/50 -mx-space-lg -mb-space-lg p-space-md mt-space-sm">
+<div class="flex items-center gap-space-xs">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-container text-on-primary rounded font-label-sm text-label-sm font-semibold hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">biotech</span>
+<span>Analyze in Model</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container-high rounded font-label-sm text-label-sm font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">device_hub</span>
+<span>Trace Provenance &amp; Coverage</span>
+</button>
+<a class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary hover:text-on-secondary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>Open Source</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<!-- Vector Channels -->
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="text-outline">Vector:</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-medium">WhatsApp Broadcast</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-medium">X (formerly Twitter)</span>
+</div>
+</div>
+</div>
+<!-- Analytical Snapshot Visual -->
+<div class="lg:w-56 shrink-0 flex flex-col gap-space-xs">
+<div class="relative w-full h-36 bg-surface-container rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Macro view of an elderly Indian citizen's hand resting beside official paper documents and a digital fingerprint scanner, dignified documentary composition, crisp textures, archival focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaEHpY8TSPd-Aar1XYzmtcCgVnbZA38U6gkTtITwkfzFjSOREx0EdU7OWMg84TgIB1OKN5aJ6c3jKhMik1J0XcSh0R_1uVOurcXYxEs4Fn9hwuh4iW6SDV3o851GmB13geR-uBfB0IvFotNPeilppaI8VzGnU3u8zdD-yA20zRk656-29GqVR7-4Vz4D-6L5SrGtZY7OSfkcQ3-JZ2ge4cA0nfG9GsUPb_ciuaeq8n"/>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary/80 text-on-primary font-label-sm text-[10px] tracking-wider uppercase backdrop-blur-sm">Disproven Claim</span>
+</div>
+<div class="flex items-center justify-between text-outline font-label-sm text-[11px] px-1">
+<span>IFCN ID: #BM-9821</span>
+<span class="text-secondary font-medium">Refutation Verified</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+<!-- Pagination, Stream Analytics & Retrieval Controls -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md mb-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-mono">
+        Showing <strong class="text-on-surface font-semibold">1–4</strong> of <strong class="text-on-surface font-semibold">48</strong> records
+      </span>
+<span class="text-outline hidden md:inline">|</span>
+<span class="font-label-sm text-label-sm text-outline hidden md:inline">Page 1 of 12</span>
+</div>
+<!-- Interactive Navigation Buttons -->
+<div class="flex items-center gap-space-xs w-full sm:w-auto justify-end">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low text-outline font-label-sm text-label-sm cursor-not-allowed" disabled="" type="button">
+        Previous
+      </button>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg bg-primary-container text-on-primary font-label-sm text-label-sm font-semibold" type="button">1</button>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors" type="button">2</button>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors" type="button">3</button>
+<span class="text-outline px-1">...</span>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors" type="button">12</button>
+</div>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-sm text-label-sm font-semibold transition-colors" type="button">
+<span>Load More Articles</span>
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</button>
+</div>
+</div>
+<!-- Deep Telemetry Diagnostic Strip (Analyst Bottom Dock) -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm pt-space-xs text-outline font-label-sm text-label-sm">
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center justify-between">
+<span>Query Cosine Threshold:</span>
+<span class="font-mono text-on-surface font-medium">≥ 0.68</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center justify-between">
+<span>GDELT Sync Latency:</span>
+<span class="font-mono text-on-surface font-medium">412ms</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center justify-between">
+<span>Syndication Clustering:</span>
+<span class="font-mono text-on-surface font-medium">Active (v2.1)</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center justify-between">
+<span>IFCN Registry Check:</span>
+<span class="font-mono text-secondary font-medium">Passed</span>
+</div>
+</div>
+</div></main></div></body></html>

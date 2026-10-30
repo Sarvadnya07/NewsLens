@@ -3,10 +3,12 @@
 Identifies:
 1. Exact or near-identical duplicate headlines across publishers.
 2. Thematic / related coverage using character/word n-gram TF-IDF cosine similarity.
+Classifies relationships as 'exact_duplicate', 'likely_duplicate', or 'similar_coverage'.
 Preserves all original publisher attributions and source URLs.
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List
+
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -18,19 +20,28 @@ from src.preprocessing.cleaner import clean_text
 class NewsDeduplicator:
     """Clustering and relationship discovery engine for news articles."""
 
-    def __init__(self, similarity_threshold: float = 0.55):
-        self.similarity_threshold = similarity_threshold
+    def __init__(self, exact_threshold: float = 0.90, similar_threshold: float = 0.55):
+        self.exact_threshold = exact_threshold
+        self.similar_threshold = similar_threshold
+
+    def classify_relationship(self, sim: float) -> str:
+        if sim >= self.exact_threshold:
+            return "exact_or_republished"
+        elif sim >= 0.70:
+            return "likely_syndicated"
+        elif sim >= self.similar_threshold:
+            return "similar_coverage"
+        return "unrelated"
 
     def find_related_and_duplicates(
-        self,
-        articles: List[NormalizedArticle]
+        self, articles: List[NormalizedArticle]
     ) -> List[Dict[str, Any]]:
         """
         Groups articles into coverage clusters based on headline similarity.
         Returns a list of cluster dicts:
         {
             "primary_article": NormalizedArticle,
-            "related_articles": List[{"article": NormalizedArticle, "similarity": float}],
+            "related_articles": List[{"article": NormalizedArticle, "similarity": float, "relationship": str}],
             "publishers": List[str],
             "total_coverage_count": int
         }
@@ -39,22 +50,22 @@ class NewsDeduplicator:
             return []
 
         if len(articles) == 1:
-            return [{
-                "primary_article": articles[0],
-                "related_articles": [],
-                "publishers": [articles[0].publisher],
-                "total_coverage_count": 1
-            }]
+            return [
+                {
+                    "primary_article": articles[0],
+                    "related_articles": [],
+                    "publishers": [articles[0].publisher],
+                    "total_coverage_count": 1,
+                }
+            ]
 
         cleaned_titles = [clean_text(a.title) for a in articles]
 
-        # Use unigram + bigram TF-IDF
         try:
             vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
             tfidf_matrix = vectorizer.fit_transform(cleaned_titles)
             sim_matrix = cosine_similarity(tfidf_matrix)
         except Exception:
-            # Fallback if vocabulary is degenerate
             sim_matrix = np.eye(len(articles))
 
         visited = set()
@@ -72,23 +83,29 @@ class NewsDeduplicator:
             for j in range(len(articles)):
                 if i != j and j not in visited:
                     sim = float(sim_matrix[i, j])
-                    if sim >= self.similarity_threshold:
+                    if sim >= self.similar_threshold:
                         visited.add(j)
-                        related.append({
-                            "article": articles[j],
-                            "similarity": round(sim, 3)
-                        })
+                        rel_type = self.classify_relationship(sim)
+                        related.append(
+                            {
+                                "article": articles[j],
+                                "similarity": round(sim, 3),
+                                "relationship": rel_type,
+                            }
+                        )
                         publishers.add(articles[j].publisher)
 
             # Sort related articles by similarity score
             related.sort(key=lambda x: x["similarity"], reverse=True)
 
-            clusters.append({
-                "primary_article": primary,
-                "related_articles": related,
-                "publishers": list(publishers),
-                "total_coverage_count": 1 + len(related)
-            })
+            clusters.append(
+                {
+                    "primary_article": primary,
+                    "related_articles": related,
+                    "publishers": list(publishers),
+                    "total_coverage_count": 1 + len(related),
+                }
+            )
 
         return clusters
 
@@ -97,7 +114,7 @@ class NewsDeduplicator:
         query_text: str,
         articles: List[NormalizedArticle],
         top_n: int = 5,
-        min_sim: float = 0.25
+        min_sim: float = 0.15,
     ) -> List[Dict[str, Any]]:
         """Finds related articles from an article list against arbitrary user text."""
         if not query_text or not articles:
@@ -119,10 +136,14 @@ class NewsDeduplicator:
         results = []
         for i, score in enumerate(scores):
             if score >= min_sim:
-                results.append({
-                    "article": articles[i],
-                    "similarity": round(float(score), 3)
-                })
+                rel_type = self.classify_relationship(float(score))
+                results.append(
+                    {
+                        "article": articles[i],
+                        "similarity": round(float(score), 3),
+                        "relationship": rel_type,
+                    }
+                )
 
         results.sort(key=lambda x: x["similarity"], reverse=True)
         return results[:top_n]

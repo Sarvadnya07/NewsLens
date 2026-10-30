@@ -1,16 +1,17 @@
 """Application service layer orchestrating Ingestion, ML, Retrieval, and Storage."""
 
+import hashlib
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from src.models import NormalizedArticle, FactCheckRecord
-from src.storage.database import DatabaseManager
 from src.ingestion.gdelt import GdeltClient
 from src.ingestion.rss import RssIngestionService
 from src.ml.predict import FakeNewsScreeningModel
-from src.retrieval.fact_check import FactCheckRetriever
+from src.models import NormalizedArticle, canonicalize_url
 from src.processing.deduplication import NewsDeduplicator
+from src.retrieval.fact_check import FactCheckRetriever
+from src.storage.database import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +20,7 @@ class NewsLensService:
     """Central orchestration service for NewsLens India."""
 
     def __init__(
-        self,
-        db_path: str = "data/newslens.db",
-        fact_checks_path: str = "data/fact_checks.json"
+        self, db_path: str = "data/newslens.db", fact_checks_path: str = "data/fact_checks.json"
     ):
         self.db = DatabaseManager(db_path=db_path)
         self.gdelt = GdeltClient()
@@ -48,14 +47,10 @@ class NewsLensService:
                 source_type="rss",
                 status=info.get("status", "unknown"),
                 items_fetched=info.get("count", 0),
-                error_message=info.get("error")
+                error_message=info.get("error"),
             )
 
-        return {
-            "total_fetched": len(articles),
-            "new_stored": inserted_count,
-            "stats": stats
-        }
+        return {"total_fetched": len(articles), "new_stored": inserted_count, "stats": stats}
 
     def search_gdelt(self, query: str, max_records: int = 25) -> List[NormalizedArticle]:
         """Queries GDELT Doc API for Indian news topic and persists results."""
@@ -69,14 +64,14 @@ class NewsLensService:
                 source_name=f"GDELT: {query}",
                 source_type="gdelt",
                 status="success",
-                items_fetched=len(articles)
+                items_fetched=len(articles),
             )
         else:
             self.db.record_source_status(
                 source_name=f"GDELT: {query}",
                 source_type="gdelt",
                 status="empty_or_rate_limited",
-                items_fetched=0
+                items_fetched=0,
             )
         return articles
 
@@ -85,12 +80,15 @@ class NewsLensService:
         title: str,
         publisher: str = "Manual User Submission",
         url: str = "",
-        summary: str = ""
+        summary: str = "",
     ) -> NormalizedArticle:
         """Stores a user-submitted article/headline for monitoring and tracking."""
-        import hashlib
         now_iso = datetime.now(timezone.utc).isoformat()
-        dummy_url = url.strip() if url and url.strip() else f"manual://{hashlib.md5(title.encode()).hexdigest()}"
+        dummy_url = (
+            canonicalize_url(url.strip())
+            if url and url.strip()
+            else f"manual://{hashlib.md5(title.encode()).hexdigest()}"
+        )
         art_id = f"manual_{hashlib.sha256(dummy_url.encode()).hexdigest()[:16]}"
 
         article = NormalizedArticle(
@@ -104,16 +102,13 @@ class NewsLensService:
             summary=summary.strip(),
             language="en",
             country="IN",
-            query="manual"
+            query="manual",
         )
         self.db.upsert_article(article)
         return article
 
     def get_recent_articles(
-        self,
-        query: Optional[str] = None,
-        source_type: Optional[str] = None,
-        limit: int = 50
+        self, query: Optional[str] = None, source_type: Optional[str] = None, limit: int = 50
     ) -> List[NormalizedArticle]:
         """Fetches stored articles from SQLite."""
         return self.db.get_articles(query=query, source_type=source_type, limit=limit)
@@ -130,12 +125,14 @@ class NewsLensService:
     # --- Evidence & Fact-Check Retrieval ---
 
     def retrieve_fact_checks(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
-        """Retrieves matching fact check claims using BM25 ranking."""
+        """Retrieves matching fact check claims using BM25Plus ranking."""
         return self.retriever.retrieve(query=query, top_k=top_k)
 
     # --- Duplicate & Related Coverage ---
 
-    def analyze_coverage_clusters(self, articles: Optional[List[NormalizedArticle]] = None) -> List[Dict[str, Any]]:
+    def analyze_coverage_clusters(
+        self, articles: Optional[List[NormalizedArticle]] = None
+    ) -> List[Dict[str, Any]]:
         """Finds multi-publisher story clusters and duplicate reports."""
         target_articles = articles if articles is not None else self.get_recent_articles(limit=100)
         return self.deduplicator.find_related_and_duplicates(target_articles)

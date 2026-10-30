@@ -2,27 +2,26 @@
 
 Covers:
 - Text preprocessing & cleaning
-- ML model loading, inference, empty/invalid input handling
-- GDELT normalization & error resilience
+- ML model loading, inference, empty/invalid/short input handling
+- GDELT normalization & error resilience (429 rate-limiting, network failures)
 - RSS parsing & malformed feed handling
-- BM25 fact check retrieval & no-match behavior
-- Deduplication & cosine clustering
-- SQLite persistence & parameterization
+- BM25 fact check retrieval (matches, empty corpus, single record, no-match)
+- URL canonicalization and deduplication (exact duplicates vs similar coverage)
+- SQLite persistence, parameterized queries, and transactions
+- End-to-end service workflows
 """
 
-import os
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.models import NormalizedArticle, FactCheckRecord
-from src.preprocessing.cleaner import clean_text, tokenize_text
-from src.storage.database import DatabaseManager
 from src.ingestion.gdelt import GdeltClient
 from src.ingestion.rss import RssIngestionService
 from src.ml.predict import FakeNewsScreeningModel
-from src.retrieval.fact_check import FactCheckRetriever
+from src.models import NormalizedArticle, canonicalize_url
+from src.preprocessing.cleaner import clean_text, tokenize_text
 from src.processing.deduplication import NewsDeduplicator
+from src.retrieval.fact_check import FactCheckRetriever
 from src.services.news_service import NewsLensService
+from src.storage.database import DatabaseManager
 
 
 # 1. Text Preprocessing Tests
@@ -49,12 +48,19 @@ def test_tokenize_text():
     assert "the" not in tokens
 
 
-# 2. ML Inference & Artifact Tests
+# 2. URL Canonicalization Tests
+def test_canonicalize_url():
+    u1 = "https://WWW.EXAMPLE.COM/news/story-1/?utm_source=twitter&utm_medium=social&id=10"
+    clean = canonicalize_url(u1)
+    assert clean == "https://www.example.com/news/story-1?id=10"
+    assert "utm_source" not in clean
+
+
+# 3. ML Inference & Artifact Tests
 def test_ml_model_loading_and_inference():
     model = FakeNewsScreeningModel()
     assert model.is_ready is True
 
-    # Test sample statement
     res = model.predict("Government announces new budget allocation for infrastructure.")
     assert res["status"] == "success"
     assert "label" in res
@@ -62,6 +68,7 @@ def test_ml_model_loading_and_inference():
     assert 0.0 <= res["prob_fake"] <= 1.0
     assert 0.0 <= res["prob_true"] <= 1.0
     assert "uncertainty_note" in res
+    assert "LIAR" in res["uncertainty_note"]
 
 
 def test_ml_model_empty_and_short_input():
@@ -74,7 +81,7 @@ def test_ml_model_empty_and_short_input():
     assert res_short["status"] == "short_input"
 
 
-# 3. GDELT Normalization & Error Resilience Tests
+# 4. GDELT Normalization & Error Resilience Tests
 def test_gdelt_normalization_mocked():
     client = GdeltClient(min_interval_seconds=0.0)
 
@@ -84,12 +91,12 @@ def test_gdelt_normalization_mocked():
     mock_resp.json.return_value = {
         "articles": [
             {
-                "url": "https://example.in/news/123",
+                "url": "https://example.in/news/123?utm_campaign=breaking",
                 "title": "ISRO launches new communications satellite",
                 "seendate": "20261030T100000Z",
                 "domain": "example.in",
                 "language": "English",
-                "sourcecountry": "IN"
+                "sourcecountry": "IN",
             }
         ]
     }
@@ -102,6 +109,7 @@ def test_gdelt_normalization_mocked():
         assert art.publisher == "example.in"
         assert art.source_type == "gdelt"
         assert art.country == "IN"
+        assert "utm_campaign" not in art.url
 
 
 def test_gdelt_rate_limit_and_error_handling():
@@ -122,7 +130,7 @@ def test_gdelt_rate_limit_and_error_handling():
         assert articles == []
 
 
-# 4. RSS Ingestion & Malformed Feeds Tests
+# 5. RSS Ingestion & Malformed Feeds Tests
 def test_rss_feed_parsing_mocked():
     service = RssIngestionService()
 
@@ -130,9 +138,10 @@ def test_rss_feed_parsing_mocked():
     mock_feed.status = 200
     entry1 = MagicMock()
     entry1.title = "Supreme court hears landmark petition"
-    entry1.link = "https://thehindu.com/news/1"
+    entry1.link = "https://thehindu.com/news/1?utm_medium=rss"
     entry1.summary = "A bench headed by Chief Justice..."
     entry1.published = "Fri, 30 Oct 2026 10:00:00 GMT"
+    entry1.published_parsed = (2026, 10, 30, 10, 0, 0, 4, 303, 0)
 
     mock_feed.entries = [entry1]
 
@@ -142,6 +151,8 @@ def test_rss_feed_parsing_mocked():
         assert articles[0].title == "Supreme court hears landmark petition"
         assert articles[0].publisher == "The Hindu"
         assert articles[0].source_type == "rss"
+        assert "utm_medium" not in articles[0].url
+        assert "2026-10-30T10:00:00+00:00" in articles[0].published_at
 
 
 def test_rss_malformed_feed_handling():
@@ -152,10 +163,11 @@ def test_rss_malformed_feed_handling():
         assert articles == []
 
 
-# 5. BM25 Fact Check Retrieval Tests
+# 6. BM25 Fact Check Retrieval Tests
 def test_fact_check_retrieval_match(tmp_path):
     data_file = tmp_path / "fact_checks.json"
-    data_file.write_text("""[
+    data_file.write_text(
+        """[
         {
             "claim_id": "test_001",
             "claim": "Free laptop distribution scheme announced for all students.",
@@ -166,47 +178,84 @@ def test_fact_check_retrieval_match(tmp_path):
             "source_url": "https://pib.gov.in",
             "explanation": "No such scheme exists."
         }
-    ]""", encoding="utf-8")
+    ]""",
+        encoding="utf-8",
+    )
 
     retriever = FactCheckRetriever(data_path=str(data_file))
     results = retriever.retrieve("students free laptop scheme", top_k=2)
     assert len(results) == 1
     assert results[0]["claim_id"] == "test_001"
     assert results[0]["verdict"] == "Fake"
+    assert "match_advisory" in results[0]
 
 
-def test_fact_check_retrieval_no_match(tmp_path):
+def test_fact_check_retrieval_empty_corpus(tmp_path):
     data_file = tmp_path / "fact_checks.json"
     data_file.write_text("[]", encoding="utf-8")
     retriever = FactCheckRetriever(data_path=str(data_file))
-    results = retriever.retrieve("unrelated random text query")
+    results = retriever.retrieve("students laptop scheme")
     assert results == []
 
 
-# 6. Deduplication & Related News Tests
+def test_fact_check_retrieval_empty_query(tmp_path):
+    data_file = tmp_path / "fact_checks.json"
+    data_file.write_text(
+        """[
+        {"claim_id": "1", "claim": "Sample claim", "verdict": "Fake", "claimant": "X", "fact_checker": "PIB", "review_date": "2026", "source_url": "url", "explanation": "exp"}
+    ]""",
+        encoding="utf-8",
+    )
+    retriever = FactCheckRetriever(data_path=str(data_file))
+    assert retriever.retrieve("") == []
+    assert retriever.retrieve("   ") == []
+
+
+# 7. Deduplication & Related News Tests
 def test_deduplicator_clusters():
-    dedup = NewsDeduplicator(similarity_threshold=0.4)
+    dedup = NewsDeduplicator(exact_threshold=0.85, similar_threshold=0.4)
     a1 = NormalizedArticle(
-        id="1", title="RBI maintains repo rate at 6.5 percent", url="http://1",
-        publisher="TOI", published_at="", ingested_at="", source_type="rss"
+        id="1",
+        title="RBI maintains repo rate at 6.5 percent",
+        url="http://1",
+        publisher="TOI",
+        published_at="",
+        ingested_at="",
+        source_type="rss",
     )
     a2 = NormalizedArticle(
-        id="2", title="RBI keeps repo rate unchanged at 6.5 percent", url="http://2",
-        publisher="The Hindu", published_at="", ingested_at="", source_type="rss"
+        id="2",
+        title="RBI keeps repo rate unchanged at 6.5 percent",
+        url="http://2",
+        publisher="The Hindu",
+        published_at="",
+        ingested_at="",
+        source_type="rss",
     )
     a3 = NormalizedArticle(
-        id="3", title="Indian cricket team wins test series against Australia", url="http://3",
-        publisher="NDTV", published_at="", ingested_at="", source_type="rss"
+        id="3",
+        title="Indian cricket team wins test series against Australia",
+        url="http://3",
+        publisher="NDTV",
+        published_at="",
+        ingested_at="",
+        source_type="rss",
     )
 
     clusters = dedup.find_related_and_duplicates([a1, a2, a3])
-    assert len(clusters) == 2  # The two RBI articles should cluster together, cricket separate
+    assert len(clusters) == 2
     multi = [c for c in clusters if c["total_coverage_count"] > 1]
     assert len(multi) == 1
     assert len(multi[0]["publishers"]) == 2
+    rel_item = multi[0]["related_articles"][0]
+    assert rel_item["relationship"] in (
+        "likely_syndicated",
+        "similar_coverage",
+        "exact_or_republished",
+    )
 
 
-# 7. SQLite Persistence & Transactions Tests
+# 8. SQLite Persistence & Transactions Tests
 def test_sqlite_persistence(tmp_path):
     db_file = tmp_path / "test_newslens.db"
     db = DatabaseManager(db_path=str(db_file))
@@ -214,12 +263,12 @@ def test_sqlite_persistence(tmp_path):
     art = NormalizedArticle(
         id="test_art_01",
         title="Test Headline",
-        url="https://example.com/art1",
+        url="https://example.com/art1?utm_source=rss",
         publisher="Test Media",
         published_at="2026-10-30T10:00:00Z",
         ingested_at="2026-10-30T10:05:00Z",
         source_type="rss",
-        summary="Test summary content"
+        summary="Test summary content",
     )
 
     assert db.upsert_article(art) is True
@@ -229,3 +278,49 @@ def test_sqlite_persistence(tmp_path):
     assert len(fetched) == 1
     assert fetched[0].id == "test_art_01"
     assert fetched[0].publisher == "Test Media"
+    assert "utm_source" not in fetched[0].url
+
+
+# 9. End-to-End Service Integration Test
+def test_service_manual_submission_and_retrieval(tmp_path):
+    db_file = tmp_path / "newslens_svc_test.db"
+    fc_file = tmp_path / "fact_checks_test.json"
+    fc_file.write_text(
+        """[
+        {
+            "claim_id": "fc_svc_1",
+            "claim": "UNESCO declares Indian Anthem the best.",
+            "verdict": "False / Recurring Hoax",
+            "claimant": "WhatsApp Chain Letter",
+            "fact_checker": "BOOM Live",
+            "review_date": "2026-01-10",
+            "source_url": "https://www.boomlive.in",
+            "explanation": "UNESCO does not rank anthems."
+        }
+    ]""",
+        encoding="utf-8",
+    )
+
+    service = NewsLensService(db_path=str(db_file), fact_checks_path=str(fc_file))
+
+    # 1. Manual article submission
+    art = service.submit_manual_article(
+        "UNESCO awards best national anthem to India", publisher="WhatsApp Viral"
+    )
+    assert art.source_type == "manual"
+    assert service.db.get_article_count() == 1
+
+    # 2. ML screening
+    screen_res = service.screen_article_text(art.title)
+    assert screen_res["status"] == "success"
+    assert "label" in screen_res
+
+    # 3. Fact-check retrieval
+    fc_res = service.retrieve_fact_checks("UNESCO best anthem", top_k=1)
+    assert len(fc_res) == 1
+    assert fc_res[0]["claim_id"] == "fc_svc_1"
+
+    # 4. Related news retrieval
+    rel_res = service.find_related_news("UNESCO anthem", top_n=2)
+    assert len(rel_res) >= 1
+    assert rel_res[0]["article"].title == art.title

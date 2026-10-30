@@ -8,10 +8,11 @@ import hashlib
 import logging
 import time
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 import requests
 
-from src.models import NormalizedArticle
+from src.models import NormalizedArticle, canonicalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class GdeltClient:
         country: Optional[str] = "IN",
         language: Optional[str] = "English",
         timespan: Optional[str] = "24h",
-        max_records: int = 30
+        max_records: int = 30,
     ) -> List[NormalizedArticle]:
         """
         Executes an article search against GDELT Doc API and returns normalized articles.
@@ -61,30 +62,26 @@ class GdeltClient:
             parts.append(f"sourcecountry:{country}")
 
         if language:
+            # GDELT v2 doc API uses 3-letter or formal lang codes (e.g., eng / English)
             parts.append(f"sourcelang:{language}")
 
         query_str = " ".join(parts)
-        params = {
+        params: Dict[str, Any] = {
             "query": query_str,
             "mode": "artlist",
             "format": "json",
-            "maxrecords": min(max(max_records, 1), 250)
+            "maxrecords": min(max(max_records, 1), 250),
         }
         if timespan:
             params["timespan"] = timespan
 
-        headers = {
-            "User-Agent": "NewsLens-India-Agent/1.0 (Academic Research; Python 3.13)"
-        }
+        headers = {"User-Agent": "NewsLens-India-Agent/1.0 (Academic Research; Python 3.13)"}
 
         self._throttle()
         try:
             self._last_request_time = time.time()
             resp = requests.get(
-                GDELT_DOC_ENDPOINT,
-                params=params,
-                headers=headers,
-                timeout=self.request_timeout
+                GDELT_DOC_ENDPOINT, params=params, headers=headers, timeout=self.request_timeout
             )
         except requests.exceptions.Timeout:
             logger.warning("GDELT request timed out after %ds", self.request_timeout)
@@ -126,23 +123,40 @@ class GdeltClient:
             if not url or not title:
                 continue
 
-            article_id = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
+            canon_url = canonicalize_url(url)
+            article_id = hashlib.sha256(canon_url.encode("utf-8")).hexdigest()[:16]
             domain = item.get("domain") or "GDELT Source"
-            seendate = item.get("seendate") or now_iso
 
-            normalized.append(NormalizedArticle(
-                id=f"gdelt_{article_id}",
-                title=title.strip(),
-                url=url.strip(),
-                publisher=domain.strip(),
-                published_at=seendate,
-                ingested_at=now_iso,
-                source_type="gdelt",
-                summary="",
-                language=item.get("language", "English"),
-                country=item.get("sourcecountry", country or "IN"),
-                query=keyword,
-                raw_metadata=item
-            ))
+            # Parse GDELT seendate (e.g. '20261030T100000Z') into readable ISO
+            raw_seendate = str(item.get("seendate") or "")
+            parsed_date = ""
+            if raw_seendate:
+                try:
+                    if "T" in raw_seendate and raw_seendate.endswith("Z"):
+                        dt = datetime.strptime(raw_seendate, "%Y%m%dT%H%M%SZ").replace(
+                            tzinfo=timezone.utc
+                        )
+                        parsed_date = dt.isoformat()
+                    else:
+                        parsed_date = raw_seendate
+                except Exception:
+                    parsed_date = raw_seendate
+
+            normalized.append(
+                NormalizedArticle(
+                    id=f"gdelt_{article_id}",
+                    title=title.strip(),
+                    url=canon_url,
+                    publisher=domain.strip(),
+                    published_at=parsed_date,
+                    ingested_at=now_iso,
+                    source_type="gdelt",
+                    summary="",
+                    language=item.get("language", "English"),
+                    country=item.get("sourcecountry", country or "IN"),
+                    query=keyword,
+                    raw_metadata=item,
+                )
+            )
 
         return normalized

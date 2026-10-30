@@ -1,9 +1,10 @@
 """SQLite database persistence for NewsLens India."""
 
-import sqlite3
 import json
-from typing import List, Optional, Dict, Any
+import sqlite3
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
 from src.models import NormalizedArticle
 
 
@@ -39,15 +40,15 @@ class DatabaseManager:
                 )
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_articles_published 
+                CREATE INDEX IF NOT EXISTS idx_articles_published
                 ON articles(published_at DESC)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_articles_source 
+                CREATE INDEX IF NOT EXISTS idx_articles_source
                 ON articles(source_type)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_articles_query 
+                CREATE INDEX IF NOT EXISTS idx_articles_query
                 ON articles(query)
             """)
             cursor.execute("""
@@ -67,7 +68,8 @@ class DatabaseManager:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             raw_meta_json = json.dumps(article.raw_metadata or {})
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO articles (
                     id, title, url, publisher, published_at, ingested_at,
                     source_type, summary, language, country, query, raw_metadata
@@ -80,20 +82,22 @@ class DatabaseManager:
                     summary=excluded.summary,
                     query=excluded.query,
                     raw_metadata=excluded.raw_metadata
-            """, (
-                article.id,
-                article.title,
-                article.url,
-                article.publisher,
-                article.published_at,
-                article.ingested_at,
-                article.source_type,
-                article.summary,
-                article.language,
-                article.country,
-                article.query,
-                raw_meta_json
-            ))
+            """,
+                (
+                    article.id,
+                    article.title,
+                    article.url,
+                    article.publisher,
+                    article.published_at,
+                    article.ingested_at,
+                    article.source_type,
+                    article.summary,
+                    article.language,
+                    article.country,
+                    article.query,
+                    raw_meta_json,
+                ),
+            )
             conn.commit()
             return cursor.rowcount > 0
 
@@ -112,9 +116,9 @@ class DatabaseManager:
         query: Optional[str] = None,
         source_type: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[NormalizedArticle]:
-        """Retrieves articles with optional filtering and pagination."""
+        """Retrieves articles with parameterized filtering and pagination."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             sql = "SELECT * FROM articles WHERE 1=1"
@@ -124,9 +128,9 @@ class DatabaseManager:
                 sql += " AND source_type = ?"
                 params.append(source_type)
 
-            if query:
+            if query and query.strip():
                 sql += " AND (title LIKE ? OR summary LIKE ? OR query LIKE ?)"
-                wildcard = f"%{query}%"
+                wildcard = f"%{query.strip()}%"
                 params.extend([wildcard, wildcard, wildcard])
 
             sql += " ORDER BY published_at DESC, ingested_at DESC LIMIT ? OFFSET ?"
@@ -143,20 +147,22 @@ class DatabaseManager:
                         raw_meta = json.loads(r["raw_metadata"])
                     except Exception:
                         pass
-                result.append(NormalizedArticle(
-                    id=r["id"],
-                    title=r["title"],
-                    url=r["url"],
-                    publisher=r["publisher"],
-                    published_at=r["published_at"],
-                    ingested_at=r["ingested_at"],
-                    source_type=r["source_type"],
-                    summary=r["summary"],
-                    language=r["language"],
-                    country=r["country"],
-                    query=r["query"],
-                    raw_metadata=raw_meta
-                ))
+                result.append(
+                    NormalizedArticle(
+                        id=r["id"],
+                        title=r["title"],
+                        url=r["url"],
+                        publisher=r["publisher"],
+                        published_at=r["published_at"],
+                        ingested_at=r["ingested_at"],
+                        source_type=r["source_type"],
+                        summary=r["summary"],
+                        language=r["language"],
+                        country=r["country"],
+                        query=r["query"],
+                        raw_metadata=raw_meta,
+                    )
+                )
             return result
 
     def get_article_count(self) -> int:
@@ -171,12 +177,13 @@ class DatabaseManager:
         source_type: str,
         status: str,
         items_fetched: int = 0,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ):
         now = datetime.now(timezone.utc).isoformat()
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO source_status (
                     source_name, source_type, last_refresh_at, status, items_fetched, error_message
                 ) VALUES (?, ?, ?, ?, ?, ?)
@@ -186,7 +193,9 @@ class DatabaseManager:
                     status=excluded.status,
                     items_fetched=excluded.items_fetched,
                     error_message=excluded.error_message
-            """, (source_name, source_type, now, status, items_fetched, error_message))
+            """,
+                (source_name, source_type, now, status, items_fetched, error_message),
+            )
             conn.commit()
 
     def get_all_source_status(self) -> List[Dict[str, Any]]:
