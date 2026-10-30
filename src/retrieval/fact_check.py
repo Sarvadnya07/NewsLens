@@ -27,6 +27,7 @@ class FactCheckRetriever:
         self.data_path = data_path
         self.records: List[FactCheckRecord] = []
         self.corpus_tokens: List[List[str]] = []
+        self.corpus_vocab: set = set()
         self.bm25: Optional[BM25Plus] = None
         self._load_records()
 
@@ -35,6 +36,7 @@ class FactCheckRetriever:
             logger.warning("Fact check data file not found at %s", self.data_path)
             self.records = []
             self.corpus_tokens = []
+            self.corpus_vocab = set()
             self.bm25 = None
             return
 
@@ -67,6 +69,7 @@ class FactCheckRetriever:
 
             self.records = valid_records
             self.corpus_tokens = valid_tokens
+            self.corpus_vocab = {tok for doc in valid_tokens for tok in doc}
 
             if self.corpus_tokens:
                 self.bm25 = BM25Plus(self.corpus_tokens)
@@ -77,6 +80,7 @@ class FactCheckRetriever:
             logger.error("Failed to load fact-check corpus: %s", str(e))
             self.records = []
             self.corpus_tokens = []
+            self.corpus_vocab = set()
             self.bm25 = None
 
     @property
@@ -96,6 +100,10 @@ class FactCheckRetriever:
 
         query_tokens = tokenize_text(query)
         if not query_tokens:
+            return []
+
+        # Prevent out-of-vocabulary false matches: query must have lexical overlap with corpus
+        if not any(token in self.corpus_vocab for token in query_tokens):
             return []
 
         try:

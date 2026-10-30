@@ -20,6 +20,7 @@ from src.preprocessing.cleaner import clean_text
 logger = logging.getLogger(__name__)
 
 ARTIFACTS_DIR = "models"
+MAX_INPUT_CHARS = 20_000  # hard bound on screening input size (payload limit)
 VECTORIZER_PATH = os.path.join(ARTIFACTS_DIR, "tfidf_vectorizer.joblib")
 CLASSIFIER_PATH = os.path.join(ARTIFACTS_DIR, "classifier.joblib")
 
@@ -94,6 +95,16 @@ class FakeNewsScreeningModel:
                 "uncertainty_note": "Please provide a valid headline or article text.",
             }
 
+        input_truncated = False
+        if len(text) > MAX_INPUT_CHARS:
+            text = text[:MAX_INPUT_CHARS]
+            input_truncated = True
+            logger.warning(
+                "Screening input exceeded %d characters; using the first %d characters.",
+                MAX_INPUT_CHARS,
+                MAX_INPUT_CHARS,
+            )
+
         cleaned = clean_text(text)
         tokens = cleaned.split()
         if len(tokens) < 2:
@@ -134,9 +145,15 @@ class FakeNewsScreeningModel:
                 "High Uncertainty: The prediction is close to the 50/50 decision threshold. "
                 + uncertainty_note
             )
+        if input_truncated:
+            uncertainty_note = (
+                f"Input truncated to the first {MAX_INPUT_CHARS} characters before screening. "
+                + uncertainty_note
+            )
 
         return {
             "status": "success",
+            "input_truncated": input_truncated,
             "label": label,
             "raw_class": pred_class,
             "confidence": round(confidence, 4),

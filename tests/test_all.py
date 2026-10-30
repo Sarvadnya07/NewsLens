@@ -13,6 +13,8 @@ Covers:
 
 from unittest.mock import MagicMock, patch
 
+import requests
+
 from src.ingestion.gdelt import GdeltClient
 from src.ingestion.rss import RssIngestionService
 from src.ml.predict import FakeNewsScreeningModel
@@ -113,7 +115,7 @@ def test_gdelt_normalization_mocked():
 
 
 def test_gdelt_rate_limit_and_error_handling():
-    client = GdeltClient(min_interval_seconds=0.0)
+    client = GdeltClient(min_interval_seconds=0.0, max_retries=0)
 
     # 429 Rate limited response
     mock_429 = MagicMock()
@@ -128,6 +130,32 @@ def test_gdelt_rate_limit_and_error_handling():
     with patch("requests.get", side_effect=Exception("Connection refused")):
         articles = client.search_articles("test")
         assert articles == []
+
+
+def test_gdelt_transient_retry_success():
+    client = GdeltClient(min_interval_seconds=0.0, max_retries=1, retry_delay_seconds=0.01)
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.headers = {"content-type": "application/json"}
+    mock_resp.json.return_value = {
+        "articles": [
+            {
+                "url": "https://example.in/news/retry-success",
+                "title": "Retry Succeeded Article",
+                "seendate": "20261030T100000Z",
+                "domain": "example.in",
+            }
+        ]
+    }
+
+    # First attempt raises Timeout, second attempt succeeds
+    side_effects = [requests.exceptions.Timeout("Read timed out"), mock_resp]
+    with patch("requests.get", side_effect=side_effects) as mock_get:
+        articles = client.search_articles("retry_test")
+        assert len(articles) == 1
+        assert articles[0].title == "Retry Succeeded Article"
+        assert mock_get.call_count == 2
 
 
 # 5. RSS Ingestion & Malformed Feeds Tests
@@ -209,6 +237,20 @@ def test_fact_check_retrieval_empty_query(tmp_path):
     retriever = FactCheckRetriever(data_path=str(data_file))
     assert retriever.retrieve("") == []
     assert retriever.retrieve("   ") == []
+    assert retriever.retrieve("!@#$%^&*()") == []
+
+
+def test_fact_check_retrieval_zero_overlap_no_false_positive():
+    retriever = FactCheckRetriever()
+    # Out of vocabulary query should yield exactly zero matches due to lexical overlap guard
+    results = retriever.retrieve(
+        "quantum astrophysics supercollider dark matter hadron", min_score=1.0
+    )
+    assert results == []
+    # In vocabulary valid query should retrieve relevant PIB claim
+    valid_results = retriever.retrieve("students free laptop scheme")
+    assert len(valid_results) > 0
+    assert valid_results[0]["claim_id"] == "pib_001"
 
 
 # 7. Deduplication & Related News Tests

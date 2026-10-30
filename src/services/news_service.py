@@ -87,7 +87,7 @@ class NewsLensService:
         dummy_url = (
             canonicalize_url(url.strip())
             if url and url.strip()
-            else f"manual://{hashlib.md5(title.encode()).hexdigest()}"
+            else f"manual://{hashlib.sha256(title.encode()).hexdigest()[:32]}"
         )
         art_id = f"manual_{hashlib.sha256(dummy_url.encode()).hexdigest()[:16]}"
 

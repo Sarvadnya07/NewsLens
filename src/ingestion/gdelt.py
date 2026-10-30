@@ -20,11 +20,19 @@ GDELT_DOC_ENDPOINT = "https://api.gdeltproject.org/api/v2/doc/doc"
 
 
 class GdeltClient:
-    """Client for GDELT 2.0 Doc API with rate throttling and resilient parsing."""
+    """Client for GDELT 2.0 Doc API with rate throttling, retries, and resilient parsing."""
 
-    def __init__(self, request_timeout: int = 10, min_interval_seconds: float = 5.0):
+    def __init__(
+        self,
+        request_timeout: int = 15,
+        min_interval_seconds: float = 5.0,
+        max_retries: int = 1,
+        retry_delay_seconds: float = 2.0,
+    ):
         self.request_timeout = request_timeout
         self.min_interval_seconds = min_interval_seconds
+        self.max_retries = max_retries
+        self.retry_delay_seconds = retry_delay_seconds
         self._last_request_time: float = 0.0
 
     def _throttle(self):
@@ -75,19 +83,38 @@ class GdeltClient:
         if timespan:
             params["timespan"] = timespan
 
-        headers = {"User-Agent": "NewsLens-India-Agent/1.0 (Academic Research; Python 3.13)"}
+        headers = {"User-Agent": "NewsLens-India-Agent/1.0 (Academic Research; Python 3.12)"}
 
-        self._throttle()
-        try:
-            self._last_request_time = time.time()
-            resp = requests.get(
-                GDELT_DOC_ENDPOINT, params=params, headers=headers, timeout=self.request_timeout
-            )
-        except requests.exceptions.Timeout:
-            logger.warning("GDELT request timed out after %ds", self.request_timeout)
-            return []
-        except (requests.exceptions.RequestException, Exception) as e:
-            logger.error("GDELT network request failed: %s", str(e))
+        resp = None
+        for attempt in range(self.max_retries + 1):
+            self._throttle()
+            try:
+                self._last_request_time = time.time()
+                resp = requests.get(
+                    GDELT_DOC_ENDPOINT, params=params, headers=headers, timeout=self.request_timeout
+                )
+                break
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if attempt < self.max_retries:
+                    logger.warning(
+                        "GDELT request attempt %d failed (%s). Retrying in %.1fs...",
+                        attempt + 1,
+                        str(e),
+                        self.retry_delay_seconds,
+                    )
+                    time.sleep(self.retry_delay_seconds)
+                else:
+                    logger.warning(
+                        "GDELT request timed out or connection failed after %d attempts: %s",
+                        attempt + 1,
+                        str(e),
+                    )
+                    return []
+            except (requests.exceptions.RequestException, Exception) as e:
+                logger.error("GDELT network request failed: %s", str(e))
+                return []
+
+        if resp is None:
             return []
 
         if resp.status_code == 429:

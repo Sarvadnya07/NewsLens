@@ -1,9 +1,9 @@
 # ML Evaluation Report: Fake News Screening Model
 
-**Training Date:** 2026-10-30T11:17:04.470496+00:00  
-**Model Family:** Logistic Regression (Balanced Class Weights, L2 Regularization, C=1.0)  
-**Feature Representation:** TF-IDF (Unigrams + Bigrams, Sublinear TF, 10,000 max features)  
-**Dataset:** LIAR Benchmark (Derived binary split from `research/fake-news-detection/train.csv` and `test.csv`)  
+**Training Date:** 2026-10-30T12:19:52.977029+00:00
+**Model Family:** Logistic Regression (Balanced Class Weights, L2 Regularization, C=1.0)
+**Feature Representation:** TF-IDF (Unigrams + Bigrams, Sublinear TF, 10,000 max features)
+**Dataset:** LIAR Benchmark (Derived binary split from `research/fake-news-detection/train.csv` and `test.csv`)
 
 ---
 
@@ -38,8 +38,8 @@
 
 ```
                       Predicted False (0)    Predicted True (1)
-Actual False (0)              689                     472       
-Actual True (1)               498                     880       
+Actual False (0)              689                     472
+Actual True (1)               498                     880
 ```
 
 ---
