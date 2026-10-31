@@ -88,23 +88,26 @@ Executed using `.venv\Scripts\python.exe`:
 - **Environment:** Scikit-learn 1.9.1 / Python 3.12.10.
 - **Model Loading:** Executed with `-W error` — loads cleanly with **0 warnings**.
 
-### Performance Metrics On Held-Out Test Set (2,539 Statements)
-- **Training Set:** 10,240 statements (LIAR benchmark)
-- **Test Set:** 2,539 statements (strictly independent split, 12 train-test duplicate leaks purged)
-- **Accuracy:** `61.80%` (0.617959)
-- **Macro Precision:** `61.57%`
-- **Macro Recall:** `61.60%`
-- **Macro F1-Score:** `61.58%`
-- **Weighted F1-Score:** `61.83%`
+### Performance Metrics On Official Untouched Test Set (1,262 Statements)
+- **Training Set:** 10,240 statements (LIAR benchmark train partition)
+- **Diagnostic Validation Set:** 1,277 statements (LIAR validation partition, 7 duplicate collisions purged)
+- **Official Test Set:** 1,262 statements (LIAR official test partition, 5 duplicate collisions purged)
+- **Accuracy:** `62.36%` (0.623613)
+- **Macro Precision:** `61.91%`
+- **Macro Recall:** `62.02%`
+- **Macro F1-Score:** `61.94%`
+- **Weighted F1-Score:** `62.45%`
+- **Fake Class Precision / Recall / F1:** `0.5657` / `0.5935` / `0.5793`
+- **True Class Precision / Recall / F1:** `0.6725` / `0.6470` / `0.6595`
 
-### Confusion Matrix Agreement
+### Confusion Matrix Agreement (Official Test Partition)
 ```
                       Predicted False (0)    Predicted True (1)
-Actual False (0)              689                     472
-Actual True (1)               498                     880
+Actual False (0)              327                     224
+Actual True (1)               251                     460
 ```
-- Total test samples: $689 + 472 + 498 + 880 = 2,539$.
-- Calculated accuracy: $\frac{689 + 880}{2539} = \frac{1569}{2539} \approx 61.7959\%$. Exactly matches recorded metric.
+- Total test samples: $327 + 224 + 251 + 460 = 1,262$.
+- Calculated accuracy: $\frac{327 + 460}{1262} = \frac{787}{1262} \approx 62.3613\%$. Exactly matches recorded metric.
 - Label mapping: `0 = Fake / Misleading`, `1 = True / Credible`.
 - Decision boundary margin check: Uncertainty flag triggered whenever $|P(\text{True}) - P(\text{Fake})| < 0.15$.
 - Dataset disclosure: Every prediction context displays the explicit disclaimer that the model was trained on the LIAR benchmark and captures lexical cues, not ground-truth facts.

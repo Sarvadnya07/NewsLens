@@ -1,0 +1,127 @@
+{
+  "src/services/news_service.py": {
+    "worktree": "0bf719863bcc550e8f791cb25e3c39d469634482c32bcfe77525495605a00cf2",
+    "index": "0bf719863bcc550e8f791cb25e3c39d469634482c32bcfe77525495605a00cf2",
+    "HEAD": "0bf719863bcc550e8f791cb25e3c39d469634482c32bcfe77525495605a00cf2"
+  },
+  "src/ingestion/gdelt.py": {
+    "worktree": "a740cdaaf445e8afa55819d4b23d03efc8a8bd726829bcf65182833bb3792e63",
+    "index": "a740cdaaf445e8afa55819d4b23d03efc8a8bd726829bcf65182833bb3792e63",
+    "HEAD": "a740cdaaf445e8afa55819d4b23d03efc8a8bd726829bcf65182833bb3792e63"
+  },
+  "src/ingestion/rss.py": {
+    "worktree": "e0fb95665732f73ed77a729cd45e1a406b7591bd94bf09631efa6ca83f1723d1",
+    "index": "e0fb95665732f73ed77a729cd45e1a406b7591bd94bf09631efa6ca83f1723d1",
+    "HEAD": "e0fb95665732f73ed77a729cd45e1a406b7591bd94bf09631efa6ca83f1723d1"
+  },
+  "src/storage/database.py": {
+    "worktree": "0bf6808c46d94fb75ae09599155aa9aa125b50e658a2f5a0c60402db0a4d3932",
+    "index": "5fc15380da2197236b1e44c5d156db3c7a164f884a03bc8308591c6c7d05de54",
+    "HEAD": "5fc15380da2197236b1e44c5d156db3c7a164f884a03bc8308591c6c7d05de54"
+  },
+  "tests/test_all.py": {
+    "worktree": "9e2680bae8513c17bb89b5e061d9bb22a9acee5fb1d7d191d1cd8b91c9144c13",
+    "index": "ff02d942d77cca3a10bc4656e63d0f671f35a8a7df096f83fbcbcaf18118dec2",
+    "HEAD": "ff02d942d77cca3a10bc4656e63d0f671f35a8a7df096f83fbcbcaf18118dec2"
+  },
+  "src/ui/pages/news_monitor.py": {
+    "worktree": "a62bb054c51af021f488e8fcabca270aeb6fbc374f8e4c087c3a3ac90c05fd9c",
+    "index": "cff1e8c0b052527c9d0e1dea1738f3bf4839a15fe8164160c046363f29c1d30a",
+    "HEAD": "cff1e8c0b052527c9d0e1dea1738f3bf4839a15fe8164160c046363f29c1d30a"
+  },
+  "src/ui/pages/dashboard.py": {
+    "worktree": "3c4a64067db26e30469009b70eef8759624441cf4f01e2869b0061a1a48e1451",
+    "index": "3c4a64067db26e30469009b70eef8759624441cf4f01e2869b0061a1a48e1451",
+    "HEAD": "3c4a64067db26e30469009b70eef8759624441cf4f01e2869b0061a1a48e1451"
+  },
+  "src/ui/pages/article_analysis.py": {
+    "worktree": "84578c29e582d1a85b1f20f1da52c771847c6f7ce28681bfb39fd74ffdb9fb2a",
+    "index": "84578c29e582d1a85b1f20f1da52c771847c6f7ce28681bfb39fd74ffdb9fb2a",
+    "HEAD": "84578c29e582d1a85b1f20f1da52c771847c6f7ce28681bfb39fd74ffdb9fb2a"
+  },
+  "src/ui/pages/evidence_coverage.py": {
+    "worktree": "e0bd89299a1f43870889002851b208143e8cc1ca5b569e83e2e10061d49564c8",
+    "index": "e0bd89299a1f43870889002851b208143e8cc1ca5b569e83e2e10061d49564c8",
+    "HEAD": "e0bd89299a1f43870889002851b208143e8cc1ca5b569e83e2e10061d49564c8"
+  },
+  "src/ui/pages/methodology.py": {
+    "worktree": "049d086a1ce31affbce846d6267aa714fd9b0e430dde7ab92184f01843c6896a",
+    "index": "1b6799876c8ea48a32f950130582ab1a819598e9b49a04e471454331b899933b",
+    "HEAD": "1b6799876c8ea48a32f950130582ab1a819598e9b49a04e471454331b899933b"
+  },
+  "app.py": {
+    "worktree": "7da62a70f96ee065f477011defead958b9124e945bbb229254a107024e5e21e7",
+    "index": "9932adf471612d046c7be5d868f47daa9da06bff012f7fe8774125da7ff064ad",
+    "HEAD": "9932adf471612d046c7be5d868f47daa9da06bff012f7fe8774125da7ff064ad"
+  },
+  "src/models.py": {
+    "worktree": "3b199522e5fb03dadd38059a94ee91ed3185d479a03a0d5e33b3d6d9840d613b",
+    "index": "743d1aa4a5b71c000952110494622b4098f27677bb2bd99930a11c853cbe7fb5",
+    "HEAD": "743d1aa4a5b71c000952110494622b4098f27677bb2bd99930a11c853cbe7fb5"
+  },
+  "src/ml/predict.py": {
+    "worktree": "87ec9e38e8d69e8c3155666207c535731c8d35d455f8126dea1420cf2dea5432",
+    "index": "87ec9e38e8d69e8c3155666207c535731c8d35d455f8126dea1420cf2dea5432",
+    "HEAD": "87ec9e38e8d69e8c3155666207c535731c8d35d455f8126dea1420cf2dea5432"
+  },
+  "src/ml/train.py": {
+    "worktree": "45dc3a38bd1f847a403fe08e67a8c559c7f3e66b661efbfdf12914814b4b8843",
+    "index": "f0811925eb7f93c60889a20b4c024fdbeab0aa717bbcf7939164cb19c42746ea",
+    "HEAD": "f0811925eb7f93c60889a20b4c024fdbeab0aa717bbcf7939164cb19c42746ea"
+  },
+  "src/retrieval/fact_check.py": {
+    "worktree": "ae61b66fadf63eced1eb81d4cde1cfa4cb98e434e20a81bc1f3461c0ae7dd362",
+    "index": "ae61b66fadf63eced1eb81d4cde1cfa4cb98e434e20a81bc1f3461c0ae7dd362",
+    "HEAD": "ae61b66fadf63eced1eb81d4cde1cfa4cb98e434e20a81bc1f3461c0ae7dd362"
+  },
+  "src/processing/deduplication.py": {
+    "worktree": "5d4319f55557463287e780bf39e04f06432471790d6ec8c35eb09f681703ba32",
+    "index": "e7abfc984b4f236446fd66551f0a49f7e0c30ffadad5faff217701034c28eb80",
+    "HEAD": "e7abfc984b4f236446fd66551f0a49f7e0c30ffadad5faff217701034c28eb80"
+  },
+  "src/ui/navigation.py": {
+    "worktree": "88bf329b1f47815d0490b0de1c681225ac6ba8e42cfa770354cdd587942c84f4",
+    "index": "88bf329b1f47815d0490b0de1c681225ac6ba8e42cfa770354cdd587942c84f4",
+    "HEAD": "88bf329b1f47815d0490b0de1c681225ac6ba8e42cfa770354cdd587942c84f4"
+  },
+  "src/ui/components.py": {
+    "worktree": "64a296b833f2af8605ab1a25fabf4b8ce90db2d51d0c5463e409b41b24947824",
+    "index": "64a296b833f2af8605ab1a25fabf4b8ce90db2d51d0c5463e409b41b24947824",
+    "HEAD": "64a296b833f2af8605ab1a25fabf4b8ce90db2d51d0c5463e409b41b24947824"
+  },
+  "src/ui/theme.py": {
+    "worktree": "f8481263acc48119485bb3e5417b8a0b31644a89fb68cc542b3a10dfa9ead832",
+    "index": "f8481263acc48119485bb3e5417b8a0b31644a89fb68cc542b3a10dfa9ead832",
+    "HEAD": "f8481263acc48119485bb3e5417b8a0b31644a89fb68cc542b3a10dfa9ead832"
+  },
+  "requirements.txt": {
+    "worktree": "b62879671a1c757f13d5845990e05285ee99fdc84a59d10894d6785a21b1fd23",
+    "index": "fd9b425f52cb6d14e53e869b58186341565175bd3799adeebf62f808e1ae3c44",
+    "HEAD": "fd9b425f52cb6d14e53e869b58186341565175bd3799adeebf62f808e1ae3c44"
+  },
+  "requirements-lock.txt": {
+    "worktree": "555c32e9fca95b881ab0e6299fd8c20f3fd96439afbf64214f6d1d3853b6fc29",
+    "index": "2cd46fad80fa578117e2c158801216c1fb1cbaeb138b273c864832c180a8f3f7",
+    "HEAD": "2cd46fad80fa578117e2c158801216c1fb1cbaeb138b273c864832c180a8f3f7"
+  },
+  "pyproject.toml": {
+    "worktree": "6186e17ffb4a81ae564dfe8b87280a5f64d8ac7b6d58d114f52fc5607837adec",
+    "index": "205d4cc683bab3245134dcc320cd9027d7056850178e7ca7e1115816829be726",
+    "HEAD": "205d4cc683bab3245134dcc320cd9027d7056850178e7ca7e1115816829be726"
+  },
+  ".gitignore": {
+    "worktree": "c881a7de989d4adac2c78fe306002eac5d5b4e4715d2d7b60756b1cbaf5a461a",
+    "index": "49143458b076d3b4bfec3b905a49a768017725920ff3310e4db7e78840bf1bf9",
+    "HEAD": "49143458b076d3b4bfec3b905a49a768017725920ff3310e4db7e78840bf1bf9"
+  },
+  "README.md": {
+    "worktree": "4c80d9804df122e6c49556784657186a955d1c5577bc11537b726ff88f1d6a80",
+    "index": "4fa69e2a4fdb29178cbcff902cdbffa131cb14e3b4acd80f1a430e0b8fd42191",
+    "HEAD": "4fa69e2a4fdb29178cbcff902cdbffa131cb14e3b4acd80f1a430e0b8fd42191"
+  },
+  ".github/workflows/ci.yml": {
+    "worktree": "ba3bf8954f1170471907fc904461275d4fd38b6d5d2a6b78782016856a3f0aa8",
+    "index": "b4fa6f0c3dbafd2cc4f4fc8effabfce85eb39fb05b5b3a9e407de204676c7d73",
+    "HEAD": "b4fa6f0c3dbafd2cc4f4fc8effabfce85eb39fb05b5b3a9e407de204676c7d73"
+  }
+}

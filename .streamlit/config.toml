@@ -1,0 +1,19 @@
+[theme]
+base = "light"
+primaryColor = "#315FE8"
+backgroundColor = "#F4F6FB"
+secondaryBackgroundColor = "#EAF0FF"
+textColor = "#142B4A"
+
+[server]
+# Bind to loopback only. A development instance must not be reachable from the
+# local network; set --server.address explicitly (and add TLS/auth in front of
+# the app) if it is ever hosted.
+address = "127.0.0.1"
+port = 8501
+headless = true
+enableCORS = true
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false

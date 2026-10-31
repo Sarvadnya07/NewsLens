@@ -4,10 +4,17 @@ Follows Stitch layout & DESIGN.md:
 - Search toolbar with topic search and refresh sources.
 - Four compact research-grade metric cards derived from real backend data.
 - Two-column main intelligence layout (Recent news feed left, Quick screening & status right).
+
+Every value shown here is read from SQLite, the fact-check corpus, or a
+measured clustering run. No attention/flag/coverage figures are synthesised
+from headline keywords.
 """
+
+import html
 
 import streamlit as st
 
+from src.ingestion.rss import AUTHORITATIVE_FEEDS
 from src.services.news_service import NewsLensService
 from src.ui.components import (
     render_disclaimer_panel,
@@ -24,11 +31,18 @@ from src.ui.navigation import (
 
 
 def render_dashboard_page(service: NewsLensService):
+    statuses = service.get_source_statuses()
+    status_label = "Datastore: Ready"
+    if statuses:
+        ts = statuses[0].get("last_refresh_at") or ""
+        if ts:
+            status_label = f"Last Refresh: {ts[:16].replace('T', ' ')} UTC"
+
     render_page_header(
         title="Overview",
         subtitle="Monitor recent coverage, screen news content and examine available evidence across high-frequency syndicated wires and linguistic registers.",
         meta_tag="REAL-TIME INDIAN MEDIA OBSERVABILITY",
-        status_label="Last updated: Today 11:42 IST (Live Sync)",
+        status_label=status_label,
     )
 
     # Search and Ingestion Toolbar with exact Stitch button styling
@@ -50,7 +64,7 @@ def render_dashboard_page(service: NewsLensService):
             if st.button("🔄 Refresh Sources", use_container_width=True):
                 with st.spinner("Polling live RSS sources..."):
                     res = service.refresh_rss_feeds()
-                    st.toast(f"Ingested {res['total_fetched']} stories ({res['new_stored']} new)")
+                    st.toast(f"Ingested {res.total_fetched} stories ({res.new_stored} new)")
                     st.rerun()
 
     st.write("")
@@ -59,49 +73,72 @@ def render_dashboard_page(service: NewsLensService):
     total_articles = service.db.get_article_count()
     fact_check_count = service.retriever.total_records
     source_statuses = service.get_source_statuses()
-    active_sources = len([s for s in source_statuses if s.get("status") == "success"]) or len(
-        source_statuses
+    configured_sources = len(service.rss.feeds)
+    # Only feeds in the current registry count toward health; legacy rows for
+    # retired feeds stay in the table but are not presented as monitored sources.
+    active_sources = len(
+        [
+            s
+            for s in source_statuses
+            if s.get("status") == "success" and s.get("source_name") in service.rss.feeds
+        ]
     )
 
-    # Estimate coverage clusters from current articles
+    # Coverage clusters are computed from the most recent stored articles; the
+    # same computation supplies the per-card related-coverage counts so the UI
+    # never displays a number that was not measured.
     recent_sample = service.get_recent_articles(limit=100)
     clusters = service.analyze_coverage_clusters(recent_sample)
     cluster_count = len(clusters)
+
+    coverage_by_article: dict[str, dict[str, int]] = {}
+    for cluster in clusters:
+        total = int(cluster.get("total_coverage_count", 1))
+        publisher_count = len(cluster.get("publishers", []) or [])
+        members = [cluster.get("primary_article")] + [
+            rel.get("article") for rel in cluster.get("related_articles", [])
+        ]
+        for member in members:
+            if member is not None:
+                coverage_by_article[member.id] = {
+                    "related": max(total - 1, 0),
+                    "publishers": publisher_count,
+                }
 
     from src.ui.components import render_stat_card
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         render_stat_card(
-            label="ARTICLES RETRIEVED",
+            label="ARTICLES STORED",
             value=f"{total_articles:,}",
-            tag="Live sync",
-            badge="SAMPLE DATA" if total_articles > 1000 else "LIVE DATA",
-            description="Across GDELT & 8 RSS feeds",
+            tag="Database WAL",
+            badge="LOCAL REPOSITORY",
+            description="Normalized SQLite records across GDELT & RSS",
         )
     with m2:
         render_stat_card(
-            label="ACTIVE SOURCES",
+            label="HEALTHY SOURCES",
             value=f"{active_sources}",
-            tag="/ 10 configured",
-            badge="SAMPLE DATA",
-            description="GDELT Doc API + English/Hindi syndicates",
+            tag=f"/ {configured_sources} configured",
+            badge="RECORDED STATUS",
+            description="Active RSS publisher streams in datastore",
         )
     with m3:
         render_stat_card(
             label="COVERAGE CLUSTERS",
             value=f"{cluster_count}",
-            tag="Dense nodes",
-            badge="SAMPLE DATA",
-            description="Similarity threshold cosine ≥ 0.78",
+            tag=f"In sample ({len(recent_sample)})",
+            badge="COMPUTED",
+            description=f"Cosine similarity ≥ {service.deduplicator.similar_threshold:.2f}",
         )
     with m4:
         render_stat_card(
-            label="FACT-CHECK MATCHES",
+            label="FACT-CHECK CLAIMS",
             value=f"{fact_check_count}",
-            tag="verified logs",
-            badge="SAMPLE DATA",
-            description="Indexed public fact-check archives",
+            tag="Indexed records",
+            badge="LOCAL ARCHIVE",
+            description="PIB Fact Check, Alt News & BOOM Live",
         )
 
     st.write("")
@@ -110,13 +147,13 @@ def render_dashboard_page(service: NewsLensService):
     left_col, right_col = st.columns([7, 5])
 
     with left_col:
-        # Tab filters matching screenshot categories: All Sources, GDELT Discovered, Regional Feeds, Flagged for Review
-        tab_all, tab_gdelt, tab_regional, tab_flagged = st.tabs(
+        # Feed tabs: every source, GDELT-discovered items, configured RSS feeds, manual submissions
+        tab_all, tab_gdelt, tab_regional, tab_manual = st.tabs(
             [
                 f"All Sources ({total_articles})",
                 "GDELT Discovered",
                 "Regional Feeds",
-                "Flagged for Review",
+                "Manual Additions",
             ]
         )
 
@@ -130,44 +167,28 @@ def render_dashboard_page(service: NewsLensService):
                 return
 
             for i, art in enumerate(arts[:10]):
-                # Provide rich signals and fact-check indicators based on content
-                signals = []
-                is_fc = False
-                if (
-                    "clarification" in art.title.lower()
-                    or "guideline" in art.title.lower()
-                    or "norms" in art.title.lower()
-                ):
-                    signals = ["Regulatory Notice", "Official Circular"]
-                elif (
-                    "video" in art.title.lower()
-                    or "claims" in art.title.lower()
-                    or "viral" in art.title.lower()
-                    or "fake" in art.title.lower()
-                ):
-                    is_fc = True
-                    signals = ["Claim Disputed", "Viral Artifact"]
-                elif (
-                    "deployment" in art.title.lower()
-                    or "monsoon" in art.title.lower()
-                    or "ndrf" in art.title.lower()
-                ):
-                    signals = ["High Wire Convergence (9 sources)"]
+                coverage = coverage_by_article.get(art.id, {})
+                related = coverage.get("related", 0)
+                publisher_count = coverage.get("publishers", 1)
 
                 render_news_card(
                     article=art,
                     index=f"{tab_key}_{i}",
                     on_screen_click=lambda a: (
-                        navigate_to(PAGE_ANALYZE_ARTICLE, {"analyzed_text": a.title}),
+                        navigate_to(
+                            PAGE_ANALYZE_ARTICLE,
+                            {"pending_article_text": a.title, "nav_origin": "monitor"},
+                        ),
                         st.rerun(),
                     ),
                     on_evidence_click=lambda a: (
                         navigate_to(PAGE_EVIDENCE_COVERAGE, {"selected_article_for_evidence": a}),
                         st.rerun(),
                     ),
-                    related_count=3 if (i % 2 == 0) else None,
-                    signals=signals,
-                    is_fact_check_match=is_fc,
+                    related_count=related or None,
+                    signals=[f"{publisher_count} publishers in cluster"]
+                    if publisher_count > 1
+                    else None,
                 )
 
         with tab_all:
@@ -185,16 +206,11 @@ def render_dashboard_page(service: NewsLensService):
                 rss_arts = service.get_recent_articles(source_type="rss", limit=10)
             display_article_list(rss_arts, "tab_regional")
 
-        with tab_flagged:
-            flagged_arts = [
-                a
-                for a in recent_sample
-                if any(
-                    w in a.title.lower()
-                    for w in ["claim", "fake", "viral", "dispute", "scam", "rumor"]
-                )
-            ]
-            display_article_list(flagged_arts or recent_sample[:3], "tab_flagged")
+        with tab_manual:
+            manual_arts = [a for a in recent_sample if a.source_type == "manual"]
+            if not manual_arts:
+                manual_arts = service.get_recent_articles(source_type="manual", limit=10)
+            display_article_list(manual_arts, "tab_manual")
 
         if total_articles > 10:
             if st.button("View All Monitored Articles in News Monitor →", use_container_width=True):
@@ -270,9 +286,32 @@ def render_dashboard_page(service: NewsLensService):
 
         st.write("")
 
-        # Source Ingestion Health Panel matching screenshot exactly
+        # Source Ingestion Health Panel dynamically computed from SQLite source_status
+        configured_names = set(service.rss.feeds.keys())
+        rss_statuses = [
+            s
+            for s in source_statuses
+            if s.get("source_type") == "rss" and s.get("source_name") in configured_names
+        ]
+        success_count = sum(1 for s in rss_statuses if s.get("status") == "success")
+        total_rss = len(service.rss.feeds)
+
+        feed_domains = ", ".join(
+            sorted(
+                feed.domain
+                for feed in AUTHORITATIVE_FEEDS
+                if feed.enabled and feed.display_name in service.rss.feeds
+            )
+        )
+
+        last_sync_ts = "Not recorded"
+        if source_statuses:
+            ts_val = source_statuses[0].get("last_refresh_at") or ""
+            if ts_val:
+                last_sync_ts = ts_val[:16].replace("T", " ") + " UTC"
+
         st.markdown(
-            """
+            f"""
             <div style="background-color:#FFFFFF; border:1px solid #E4E7EC; border-radius:4px; padding:18px 20px; margin-bottom:16px; box-shadow:0 1px 3px rgba(24, 59, 86, 0.03);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -280,39 +319,37 @@ def render_dashboard_page(service: NewsLensService):
                         <div style="font-size:1.05rem; font-weight:700; color:#183B56;">Source Ingestion Health</div>
                     </div>
                     <span style="font-size:0.78rem; font-weight:700; color:#167C80; display:flex; align-items:center; gap:4px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#167C80; display:inline-block;"></span> 90% Stable
+                        <span style="width:7px; height:7px; border-radius:50%; background:#167C80; display:inline-block;"></span> {success_count}/{total_rss} Feeds Healthy
                     </span>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid #E4E7EC;">
                     <div>
                         <div style="font-size:0.85rem; font-weight:600; color:#183B56;">GDELT Project v2 API</div>
-                        <div style="font-size:0.75rem; color:#667085;">Latency: 420ms</div>
+                        <div style="font-size:0.75rem; color:#667085;">Throttled On-Demand (5.0s min interval)</div>
                     </div>
-                    <span class="nl-badge nl-badge-teal" style="font-size:10px;">Operational (98.4%)</span>
+                    <span class="nl-badge nl-badge-teal" style="font-size:10px;">Endpoint Configured</span>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid #E4E7EC;">
                     <div>
-                        <div style="font-size:0.85rem; font-weight:600; color:#183B56;">Syndicated RSS Feeds (8)</div>
-                        <div style="font-size:0.75rem; color:#667085;">PIB, PTI, ANI, TH</div>
+                        <div style="font-size:0.85rem; font-weight:600; color:#183B56;">Configured RSS Feeds ({total_rss})</div>
+                        <div style="font-size:0.75rem; color:#667085;">{html.escape(feed_domains)}</div>
                     </div>
-                    <span class="nl-badge nl-badge-amber" style="font-size:10px;">7 Active / 1 Throttled</span>
+                    <span class="nl-badge nl-badge-teal" style="font-size:10px;">{success_count} healthy · {total_rss - success_count} without success</span>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid #E4E7EC;">
                     <div>
                         <div style="font-size:0.85rem; font-weight:600; color:#183B56;">Fact-Check Aggregator</div>
-                        <div style="font-size:0.75rem; color:#667085;">Updated 3h ago</div>
+                        <div style="font-size:0.75rem; color:#667085;">Verified Local Corpus ({fact_check_count} claims)</div>
                     </div>
-                    <span class="nl-badge nl-badge-navy" style="font-size:10px;">Active</span>
+                    <span class="nl-badge nl-badge-navy" style="font-size:10px;">Indexed (BM25Plus)</span>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0 0 0; border-top:1px solid #E4E7EC;">
-                    <div style="font-size:0.8rem; font-weight:600; color:#183B56;">Network Buffer Capacity</div>
-                    <div style="width:120px; height:8px; background:#D0DAEE; border-radius:4px; overflow:hidden;">
-                        <div style="width:78%; height:100%; background:#167C80;"></div>
-                    </div>
+                    <div style="font-size:0.8rem; font-weight:600; color:#183B56;">Last Recorded Ingestion Run</div>
+                    <div style="font-size:0.78rem; font-family:monospace; color:#183B56;">{last_sync_ts}</div>
                 </div>
             </div>
             """,

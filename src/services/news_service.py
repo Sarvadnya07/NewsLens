@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from src.ingestion.gdelt import GdeltClient
@@ -31,9 +32,15 @@ class NewsLensService:
 
     def __init__(
         self,
-        db_path: str = "data/newslens.db",
-        fact_checks_path: str = "data/fact_checks.json",
+        db_path: Optional[str] = None,
+        fact_checks_path: Optional[str] = None,
     ):
+        # Environment overrides let deployments and tests point the service at
+        # a different datastore without editing source defaults.
+        db_path = db_path or os.environ.get("NEWSLENS_DB_PATH", "data/newslens.db")
+        fact_checks_path = fact_checks_path or os.environ.get(
+            "NEWSLENS_FACT_CHECKS_PATH", "data/fact_checks.json"
+        )
         self.db = DatabaseManager(db_path=db_path)
         self.gdelt = GdeltClient()
         self.rss = RssIngestionService()
@@ -147,6 +154,10 @@ class NewsLensService:
         self.db.upsert_article(article)
         return article
 
+    def get_distinct_publishers(self) -> List[str]:
+        """Publishers that actually have stored coverage (for the monitor filter)."""
+        return self.db.get_distinct_publishers()
+
     def query_monitor_articles(
         self,
         query: Optional[str] = None,
@@ -154,44 +165,69 @@ class NewsLensService:
         limit: int = 50,
         offset: int = 0,
         sort_order: str = "Recency",
+        publisher: Optional[str] = None,
+        days: Optional[int] = None,
+        order_by: str = "ingested_at",
     ) -> Dict[str, Any]:
         """Provides a clean, composable service contract for the News Monitor.
+
+        ``days`` limits results to the trailing window measured against the
+        effective publication date (falling back to ingestion date when a
+        publisher supplied no usable timestamp).
 
         Returns:
           - articles: List of matching NormalizedArticle objects for current page.
           - total_matching: Total matching records across the entire dataset.
           - page: Current page number (1-indexed).
           - page_size: Limit passed.
+          - total_pages: Number of pages available for the current filters.
           - applied_filters: Dictionary summarizing applied parameters.
         """
         clean_query = query.strip() if query and query.strip() else None
         clean_source = source_type.strip().lower() if source_type and source_type.strip() else None
         if clean_source in ("all", "none"):
             clean_source = None
+        clean_publisher = publisher.strip() if publisher and publisher.strip() else None
 
+        since_iso: Optional[str] = None
+        if days and days > 0:
+            since_iso = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+        limit = max(int(limit), 1)
+        offset = max(int(offset), 0)
         ascending = "Chronological" in sort_order or "Oldest" in sort_order
+
         articles = self.db.get_articles(
             query=clean_query,
             source_type=clean_source,
+            publisher=clean_publisher,
+            since_iso=since_iso,
             limit=limit,
             offset=offset,
-            order_by="ingested_at",
+            order_by=order_by,
             ascending=ascending,
         )
         total_matching = self.db.count_matching_articles(
             query=clean_query,
             source_type=clean_source,
+            publisher=clean_publisher,
+            since_iso=since_iso,
         )
 
+        total_pages = (total_matching + limit - 1) // limit if total_matching else 0
         return {
             "articles": articles,
             "total_matching": total_matching,
-            "page": (offset // limit) + 1 if limit > 0 else 1,
+            "page": (offset // limit) + 1,
             "page_size": limit,
+            "total_pages": total_pages,
             "applied_filters": {
                 "query": clean_query,
                 "source_type": clean_source,
+                "publisher": clean_publisher,
+                "days": days,
                 "sort_order": sort_order,
+                "order_by": order_by,
             },
         }
 

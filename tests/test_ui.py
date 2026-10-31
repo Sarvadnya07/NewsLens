@@ -2,8 +2,11 @@
 Streamlit UI integration and component unit tests for NewsLens India.
 """
 
+import os
+import sqlite3
 from pathlib import Path
 
+import pytest
 from streamlit.testing.v1 import AppTest
 
 from src.ui.components import (
@@ -26,6 +29,27 @@ from src.ui.pages.news_monitor import render_news_monitor_page
 from src.ui.theme import apply_theme
 
 APP_PATH = str(Path(__file__).parent.parent / "app.py")
+
+
+def _stored_article_count() -> int:
+    """Read-only check for a seeded datastore (data/*.db is not committed)."""
+    db_path = os.environ.get("NEWSLENS_DB_PATH", "data/newslens.db")
+    if not os.path.exists(db_path):
+        return 0
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            return int(conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0])
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return 0
+
+
+SEEDED_DB = _stored_article_count() > 0
+requires_seeded_db = pytest.mark.skipif(
+    not SEEDED_DB, reason="no seeded article datastore (data/newslens.db is not committed)"
+)
 
 
 def test_ui_imports():
@@ -108,6 +132,7 @@ def test_app_test_url_query_param_sync():
     assert at.session_state["monitor_query"] == "railway"
 
 
+@requires_seeded_db
 def test_app_test_news_monitor_default_displays_records():
     """Verify that News Monitor displays stored records under default 'All' filters."""
     at = AppTest.from_file(APP_PATH, default_timeout=15)
@@ -162,3 +187,82 @@ def test_app_test_methodology_page():
     assert "Methodology" in markdown_content
     assert "10,000 Vocab Max" in markdown_content
     assert "L-BFGS" in markdown_content
+
+
+# --- Regression tests for the remediation pass -----------------------------
+
+
+def _monitor_app():
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    at.sidebar.radio[0].set_value("News Monitor").run()
+    assert not at.exception
+    return at
+
+
+def _selectbox_by_label(at, label):
+    matches = [sb for sb in at.selectbox if sb.label == label]
+    assert matches, f"selectbox labelled {label!r} not found"
+    return matches[0]
+
+
+def _header_text(at):
+    for m in at.markdown:
+        if "records identified" in m.value:
+            return m.value
+    return ""
+
+
+@requires_seeded_db
+def test_news_monitor_source_filter_is_applied():
+    """Regression: the default 'All (GDELT + RSS)' label used to trigger GIS-style
+    substring matching on 'GDELT' and filter the dashboard down to GDELT-only."""
+    at = _monitor_app()
+    assert "0 records identified" not in _header_text(at)
+
+    _selectbox_by_label(at, "Ingestion Pipe").set_value("Source: Syndicated RSS").run()
+    assert not at.exception
+    rss_total = _header_text(at)
+    assert "0 records identified" not in rss_total
+
+    _selectbox_by_label(at, "Ingestion Pipe").set_value("Source: GDELT DOC API").run()
+    assert not at.exception
+    assert "0 records identified" in _header_text(at)
+
+
+@requires_seeded_db
+def test_news_monitor_publisher_filter_changes_results():
+    at = _monitor_app()
+    baseline = _header_text(at)
+
+    publisher_select = _selectbox_by_label(at, "Outlet Domain")
+    options = [opt for opt in publisher_select.options if not opt.startswith("Publisher: All")]
+    assert options, "expected at least one stored publisher option"
+    publisher_select.set_value(options[0]).run()
+    assert not at.exception
+
+    filtered = _header_text(at)
+    assert filtered and filtered != baseline
+
+
+@requires_seeded_db
+def test_news_monitor_pagination_controls_exist():
+    at = _monitor_app()
+    labels = [b.label for b in at.button]
+    assert any("Next" in lbl for lbl in labels)
+    assert any("Previous" in lbl for lbl in labels)
+
+
+def test_article_analysis_does_not_prefill_fabricated_article():
+    at = AppTest.from_file(APP_PATH, default_timeout=15)
+    at.run()
+    at.sidebar.radio[0].set_value(PAGE_ANALYZE_ARTICLE).run()
+    assert not at.exception
+    assert at.text_area[0].value == ""
+
+    # The example loader must stay available and clearly synthetic.
+    load_buttons = [b for b in at.button if "Load Example" in b.label]
+    assert load_buttons
+    load_buttons[0].click().run()
+    assert not at.exception
+    assert at.text_area[0].value

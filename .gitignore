@@ -62,6 +62,7 @@ data/*.db.bak
 *.swp
 *.swo
 *~
+*.bak
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -73,5 +74,6 @@ desktop.ini
 
 # Local training & experiment artifacts (untrack generated joblib dumps while keeping code/metrics)
 models/*.joblib
+models/backup/
 *.pkl
 *.pickle

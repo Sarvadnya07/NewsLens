@@ -16,6 +16,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from src.models import NormalizedArticle
 from src.preprocessing.cleaner import clean_text
 
+# Minimum cosine similarity for a stored article to be reported as related to
+# arbitrary user query text. Shared with the UI so the stated threshold and the
+# applied threshold cannot drift apart.
+QUERY_MIN_SIMILARITY = 0.15
+
 
 class NewsDeduplicator:
     """Clustering and relationship discovery engine for news articles."""
@@ -114,7 +119,7 @@ class NewsDeduplicator:
         query_text: str,
         articles: List[NormalizedArticle],
         top_n: int = 5,
-        min_sim: float = 0.15,
+        min_sim: float = QUERY_MIN_SIMILARITY,
     ) -> List[Dict[str, Any]]:
         """Finds related articles from an article list against arbitrary user text."""
         if not query_text or not articles:

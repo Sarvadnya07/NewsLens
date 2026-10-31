@@ -11,8 +11,10 @@ Covers:
 - End-to-end service workflows
 """
 
+import os
 from unittest.mock import MagicMock, patch
 
+import pytest
 import requests
 
 from src.ingestion.gdelt import GdeltClient
@@ -24,6 +26,16 @@ from src.processing.deduplication import NewsDeduplicator
 from src.retrieval.fact_check import FactCheckRetriever
 from src.services.news_service import NewsLensService
 from src.storage.database import DatabaseManager
+
+# Trained joblib artifacts are intentionally untracked (see .gitignore); tests
+# that need them skip explicitly rather than failing a clean checkout.
+MODEL_ARTIFACTS_PRESENT = os.path.exists("models/classifier.joblib") and os.path.exists(
+    "models/tfidf_vectorizer.joblib"
+)
+requires_model_artifacts = pytest.mark.skipif(
+    not MODEL_ARTIFACTS_PRESENT,
+    reason="trained joblib artifacts are not present (run src.ml.train)",
+)
 
 
 # 1. Text Preprocessing Tests
@@ -59,6 +71,7 @@ def test_canonicalize_url():
 
 
 # 3. ML Inference & Artifact Tests
+@requires_model_artifacts
 def test_ml_model_loading_and_inference():
     model = FakeNewsScreeningModel()
     assert model.is_ready is True
@@ -73,6 +86,7 @@ def test_ml_model_loading_and_inference():
     assert "LIAR" in res["uncertainty_note"]
 
 
+@requires_model_artifacts
 def test_ml_model_empty_and_short_input():
     model = FakeNewsScreeningModel()
     res_empty = model.predict("")
@@ -324,6 +338,7 @@ def test_sqlite_persistence(tmp_path):
 
 
 # 9. End-to-End Service Integration Test
+@requires_model_artifacts
 def test_service_manual_submission_and_retrieval(tmp_path):
     db_file = tmp_path / "newslens_svc_test.db"
     fc_file = tmp_path / "fact_checks_test.json"
@@ -366,3 +381,189 @@ def test_service_manual_submission_and_retrieval(tmp_path):
     rel_res = service.find_related_news("UNESCO anthem", top_n=2)
     assert len(rel_res) >= 1
     assert rel_res[0]["article"].title == art.title
+
+
+# 10. Remediation regressions: timestamp normalization & monitor filtering
+def test_normalize_published_at_variants():
+    from src.models import normalize_published_at
+
+    assert normalize_published_at("2026-10-30T10:00:00Z") == "2026-10-30T10:00:00+00:00"
+    assert normalize_published_at("Fri, 30 Oct 2026 12:22:24 +0530") == (
+        "2026-10-30T06:52:24+00:00"
+    )
+    assert normalize_published_at("2026-10-30 10:00:00") == "2026-10-30T10:00:00+00:00"
+    assert normalize_published_at(None) == ""
+    assert normalize_published_at("") == ""
+    assert normalize_published_at("not a date") == ""
+
+
+def test_article_normalizes_unparseable_date_and_keeps_raw_metadata():
+    art = NormalizedArticle(
+        id="art_raw_date",
+        title="Headline",
+        url="https://example.com/x",
+        publisher="Example",
+        published_at="some publisher timestamp",
+        ingested_at="2026-10-30T10:00:00+00:00",
+        source_type="rss",
+    )
+    assert art.published_at == ""
+    assert art.raw_metadata["published_at_raw"] == "some publisher timestamp"
+
+
+def test_published_date_ordering_is_chronological_across_formats(tmp_path):
+    db = DatabaseManager(db_path=str(tmp_path / "ordering.db"))
+    db.upsert_articles(
+        [
+            NormalizedArticle(
+                id="old_rfc822",
+                title="Older bulletin",
+                url="https://example.com/old",
+                publisher="Outlet A",
+                published_at="Wed, 28 Oct 2026 23:50:50 +0000",
+                ingested_at="2026-10-30T10:00:00+00:00",
+                source_type="rss",
+            ),
+            NormalizedArticle(
+                id="new_iso",
+                title="Newer bulletin",
+                url="https://example.com/new",
+                publisher="Outlet B",
+                published_at="2026-10-30T09:00:00Z",
+                ingested_at="2026-10-30T10:05:00+00:00",
+                source_type="rss",
+            ),
+        ]
+    )
+
+    ordered = db.get_articles(order_by="published_at", ascending=False)
+    assert [a.id for a in ordered] == ["new_iso", "old_rfc822"]
+
+
+def test_normalize_published_timestamps_migrates_legacy_rows(tmp_path):
+    db_file = tmp_path / "legacy.db"
+    db = DatabaseManager(db_path=str(db_file))
+    db.upsert_article(
+        NormalizedArticle(
+            id="legacy_rfc",
+            title="Legacy bullet",
+            url="https://example.com/legacy",
+            publisher="Outlet A",
+            published_at="2026-10-28T23:50:50+00:00",
+            ingested_at="2026-10-30T10:00:00+00:00",
+            source_type="rss",
+        )
+    )
+    # Simulate a row written by an older ingestion path.
+    with db._connect() as conn:
+        conn.execute(
+            "UPDATE articles SET published_at = ? WHERE id = ?",
+            ("Wed, 28 Oct 2026 23:50:50 +0000", "legacy_rfc"),
+        )
+
+    result = db.normalize_published_timestamps()
+    assert result["updated"] == 1
+    with db._connect() as conn:
+        stored = conn.execute(
+            "SELECT published_at FROM articles WHERE id = ?", ("legacy_rfc",)
+        ).fetchone()[0]
+    assert stored == "2026-10-28T23:50:50+00:00"
+    # Idempotent: a second pass changes nothing.
+    assert db.normalize_published_timestamps()["updated"] == 0
+
+
+def _seed_monitor_datastore(db: DatabaseManager) -> None:
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    articles = []
+    for i in range(24):
+        published = (now - timedelta(hours=3 * i)).isoformat()
+        articles.append(
+            NormalizedArticle(
+                id=f"seed_{i:02d}",
+                title=f"Seed article {i}",
+                url=f"https://example.com/seed-{i}",
+                publisher="Publisher A" if i % 2 == 0 else "Publisher B",
+                published_at=published,
+                ingested_at=published,
+                source_type="rss" if i % 3 else "gdelt",
+                summary="Seed summary",
+            )
+        )
+    db.upsert_articles(articles)
+
+
+def test_monitor_publisher_and_source_filters(tmp_path):
+    db = DatabaseManager(db_path=str(tmp_path / "filters.db"))
+    _seed_monitor_datastore(db)
+    service = NewsLensService(
+        db_path=str(tmp_path / "filters.db"),
+        fact_checks_path=str(tmp_path / "none.json"),
+    )
+
+    only_b = service.query_monitor_articles(publisher="Publisher B", limit=50)
+    assert only_b["total_matching"] == 12
+    assert all(a.publisher == "Publisher B" for a in only_b["articles"])
+
+    only_gdelt = service.query_monitor_articles(source_type="gdelt", limit=50)
+    assert only_gdelt["total_matching"] == 8
+    assert all(a.source_type == "gdelt" for a in only_gdelt["articles"])
+
+    distinct = service.get_distinct_publishers()
+    assert distinct == ["Publisher A", "Publisher B"]
+
+
+def test_monitor_temporal_scope_and_pagination(tmp_path):
+    db_path = str(tmp_path / "paging.db")
+    db = DatabaseManager(db_path=db_path)
+    _seed_monitor_datastore(db)
+    service = NewsLensService(db_path=db_path, fact_checks_path=str(tmp_path / "none.json"))
+
+    first_page = service.query_monitor_articles(limit=10, offset=0)
+    assert first_page["total_matching"] == 24
+    assert len(first_page["articles"]) == 10
+    assert first_page["page"] == 1
+    assert first_page["total_pages"] == 3
+
+    last_page = service.query_monitor_articles(limit=10, offset=20)
+    assert len(last_page["articles"]) == 4
+    assert last_page["page"] == 3
+
+    # Page count must not depend on the page size in use.
+    assert service.query_monitor_articles(limit=5)["total_pages"] == 5
+
+    # Seed articles are spaced 3h apart, so the trailing 24h window holds the
+    # i=0..7 records (i=8 falls exactly on the boundary and is excluded).
+    past_24h = service.query_monitor_articles(days=1, limit=50)
+    assert past_24h["total_matching"] == 8
+    assert past_24h["total_matching"] < first_page["total_matching"]
+
+
+def test_dedup_related_query_exposes_similarity_key():
+    """The UI reads ``similarity``; a missing key silently rendered 0% matches."""
+    dedup = NewsDeduplicator()
+    articles = [
+        NormalizedArticle(
+            id="a1",
+            title="Parliament passes new data protection bill",
+            url="https://example.com/a1",
+            publisher="Outlet A",
+            published_at="2026-10-30T10:00:00+00:00",
+            ingested_at="2026-10-30T10:00:00+00:00",
+            source_type="rss",
+        ),
+        NormalizedArticle(
+            id="a2",
+            title="Data protection bill cleared in Parliament",
+            url="https://example.com/a2",
+            publisher="Outlet B",
+            published_at="2026-10-30T11:00:00+00:00",
+            ingested_at="2026-10-30T11:00:00+00:00",
+            source_type="rss",
+        ),
+    ]
+    results = dedup.find_related_to_query("Parliament data protection bill", articles, top_n=2)
+    assert results, "expected at least one related article"
+    assert "similarity" in results[0]
+    assert results[0]["similarity"] > 0

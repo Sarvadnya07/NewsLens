@@ -232,33 +232,31 @@ def render_model_result_card(ml: Dict[str, Any]):
     raw_class = ml.get("raw_class")
     confidence = ml.get("confidence", 0.0)
     score_pct = int(confidence * 100)
+    is_uncertain = ml.get("is_uncertain", False)
 
     # Classification badge style
-    badge_style = (
-        "background-color:#FFDAD6; color:#93000A; border:1px solid #FFB4AB;"
-        if raw_class == 0
-        else "background-color:#EAF5F3; color:#167C80; border:1px solid #C4E3DF;"
-    )
-    classification_text = (
-        "High Misinformation Lexical Framing"
-        if raw_class == 0
-        else "Consistent With Credible Lexical Distribution"
-    )
+    if is_uncertain:
+        badge_style = "background-color:#FEF7ED; color:#B7791F; border:1px solid #F6D8A8;"
+        classification_text = "Uncertain / Insufficient Model Signal"
+    elif raw_class == 0:
+        badge_style = "background-color:#FFDAD6; color:#93000A; border:1px solid #FFB4AB;"
+        classification_text = "Lower-Veracity Linguistic Pattern"
+    else:
+        badge_style = "background-color:#EAF5F3; color:#167C80; border:1px solid #C4E3DF;"
+        classification_text = "Higher-Veracity Linguistic Pattern"
 
-    # Top influential tokens extraction (sample weights if not present)
-    tokens = [
-        ("URGENT", "+0.42"),
-        ("immediate", "+0.38"),
-        ("before bookings close", "+0.35"),
-        ("indefinitely", "+0.29"),
-    ]
+    # Top influential tokens extraction (real extracted features from model)
+    tokens = ml.get("tokens") or []
 
-    tokens_html = "".join(
-        [
-            f'<span style="background:#EFF3FF; border:1px solid #D9E3F6; color:#183B56; padding:3px 8px; border-radius:3px; font-size:11px; font-weight:600; margin-right:6px; font-family:monospace;"><strong>{t[0]}</strong> <span style="color:#167C80;">{t[1]}</span></span>'
-            for t in tokens
-        ]
-    )
+    if tokens:
+        tokens_html = "".join(
+            [
+                f'<span style="background:#EFF3FF; border:1px solid #D9E3F6; color:#183B56; padding:3px 8px; border-radius:3px; font-size:11px; font-weight:600; margin-right:6px; font-family:monospace;"><strong>{html.escape(t[0])}</strong> <span style="color:#167C80;">{html.escape(t[1])}</span></span>'
+                for t in tokens
+            ]
+        )
+    else:
+        tokens_html = '<span style="font-size:11px; color:#667085; font-style:italic;">No prominent non-zero features identified in short query.</span>'
 
     st.markdown(
         f"""
@@ -267,20 +265,20 @@ def render_model_result_card(ml: Dict[str, Any]):
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:1.15rem; color:#183B56;">📊</span>
                     <div>
-                        <div style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Model Screening Result</div>
-                        <div style="font-size:0.75rem; color:#667085;">NewsLens Baseline TF-IDF + Logistic Classifier (v1.2-sample)</div>
+                        <div style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Model Screening Signal</div>
+                        <div style="font-size:0.75rem; color:#667085;">TF-IDF + Logistic Classifier (US LIAR Benchmark)</div>
                     </div>
                 </div>
-                <span class="nl-badge nl-badge-navy" style="font-size:10px;">Inference Mode: Strict</span>
+                <span class="nl-badge nl-badge-navy" style="font-size:10px;">Linguistic Screening</span>
             </div>
 
             <div style="background-color:#F8F9FF; border:1px solid #D9E3F6; border-radius:4px; padding:10px 12px; margin-bottom:14px; font-size:0.78rem; color:#42474D; line-height:1.4;">
                 <strong style="color:#183B56; text-transform:uppercase; font-size:0.72rem; letter-spacing:0.03em;">EVALUATION CONTEXT</strong><br/>
-                Trained on benchmark misinformation datasets with newsroom text calibration, prioritizing Indian national agency circular styling and linguistic panic markers.
+                Trained on US political statement benchmark (LIAR). Evaluates linguistic and stylistic framing markers only; not a factual truth determination or judicial validation.
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-size:0.85rem; font-weight:600; color:#183B56;">Predicted Categorical Class</span>
+                <span style="font-size:0.85rem; font-weight:600; color:#183B56;">Screening Classification Signal</span>
                 <span style="{badge_style} font-size:11px; font-weight:700; padding:4px 8px; border-radius:3px;">
                     {classification_text}
                 </span>
@@ -289,26 +287,26 @@ def render_model_result_card(ml: Dict[str, Any]):
             <!-- Meter and Score -->
             <div style="background-color:#F8F9FF; border:1px solid #D9E3F6; border-radius:4px; padding:14px; margin-bottom:14px;">
                 <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
-                    <div style="font-size:0.85rem; font-weight:600; color:#183B56;">Decision Value / Resemblance Score</div>
+                    <div style="font-size:0.85rem; font-weight:600; color:#183B56;">Model Class Score (Uncalibrated)</div>
                     <div style="font-size:1.35rem; font-weight:700; color:#167C80; font-family:'Inter', sans-serif;">{confidence:.2f} ({score_pct}%)</div>
                 </div>
                 <div style="width:100%; height:10px; background:#D0DAEE; border-radius:5px; overflow:hidden; margin-bottom:6px;">
                     <div style="width:{score_pct}%; height:100%; background:#167C80;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#667085;">
-                    <span>0.0 Baseline Clean</span>
-                    <span>Uncalibrated Decision Score</span>
-                    <span>1.0 High Synthetic Framing</span>
+                    <span>0.0 Neutral Boundary</span>
+                    <span>Model Confidence Score</span>
+                    <span>1.0 Strong Class Alignment</span>
                 </div>
                 <div style="font-size:0.72rem; color:#667085; font-style:italic; margin-top:8px;">
-                    * Score reflects lexical resemblance to training distribution, not factual validity.
+                    * Uncalibrated model class score reflecting lexical resemblance to training partition; not a factual truth probability.
                 </div>
             </div>
 
             <!-- Key Influential Tokens -->
             <div style="margin-bottom:12px;">
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#183B56; margin-bottom:6px;">
-                    <span>Key Influential Tokens (TF-IDF High Weights)</span>
+                    <span>Key Influential Tokens (TF-IDF Model Weights)</span>
                     <span style="color:#667085; font-weight:normal;">Linguistic Salience</span>
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:4px;">
@@ -317,8 +315,8 @@ def render_model_result_card(ml: Dict[str, Any]):
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid #E4E7EC; font-size:0.75rem; color:#667085;">
-                <span>🌐 Embedding: n-gram (1,3) + Char-wb</span>
-                <span>Tokens parsed: 54</span>
+                <span>🌐 Vocabulary: 10,000 TF-IDF (1, 2-grams)</span>
+                <span>Algorithm: Logistic Regression (L-BFGS)</span>
             </div>
         </article>
         """,
@@ -485,13 +483,17 @@ def render_monitor_article_card(
 def render_fact_check_card(record: Dict[str, Any], index: int):
     """Renders a verified fact-check record match matching Stitch / DESIGN (1).md specification."""
     claim = record.get("claim", "")
-    checker = record.get("fact_checker", "PIB Fact Check / News Checker India")
-    verdict = record.get("verdict", "Fabricated / False")
+    checker = record.get("fact_checker", "Accredited Fact-Checker")
+    verdict = record.get("verdict", "Investigated Claim")
     source_url = record.get("source_url", "")
-    review_date = record.get("review_date", "Published 3 days ago")
-    score = record.get("bm25_score")
+    review_date = record.get("review_date", "Date Recorded")
+    score = record.get("relevance_score", record.get("bm25_score"))
 
-    sim_pct = "Similarity: 88%" if score is None else f"Similarity: {min(99, int(score * 12))}%"
+    score_label = (
+        "Lexical Match: Strong"
+        if score and score > 5.0
+        else ("Candidate Match" if score else "Indexed Fact-Check")
+    )
 
     st.markdown(
         f"""
@@ -499,38 +501,38 @@ def render_fact_check_card(record: Dict[str, Any], index: int):
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:1.15rem; color:#183B56;">📑</span>
-                    <span style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Published Fact-Check Assessments</span>
+                    <span style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Published Fact-Check Candidate</span>
                 </div>
-                <span class="nl-badge nl-badge-teal" style="font-weight:700;">{sim_pct}</span>
+                <span class="nl-badge nl-badge-teal" style="font-weight:700;">{score_label}</span>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.75rem;">
-                <span style="font-weight:700; color:#667085; text-transform:uppercase; letter-spacing:0.03em;">EXTERNAL REGISTRY MATCH</span>
+                <span style="font-weight:700; color:#667085; text-transform:uppercase; letter-spacing:0.03em;">LOCAL ARCHIVE RETRIEVAL</span>
                 <span style="color:#667085;">{html.escape(review_date)}</span>
             </div>
 
             <div style="font-size:1.05rem; font-weight:600; color:#183B56; line-height:1.35; margin-bottom:8px; font-family:'Newsreader', serif;">
-                Claim check: {html.escape(claim)}
+                Investigated Claim: {html.escape(claim)}
             </div>
 
             <div style="font-size:0.78rem; color:#42474D; margin-bottom:12px;">
                 Source: <strong style="color:#183B56;">{html.escape(checker)}</strong> •
-                <span style="color:#167C80; font-weight:600;">IFCN Signatory Verified</span>
+                <span style="color:#167C80; font-weight:600;">Public Record</span>
             </div>
 
             <div style="background-color:#F8F9FF; border:1px solid #D9E3F6; border-radius:4px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:0.75rem; color:#667085; font-weight:600;">Verbatim Publisher Verdict:</span>
+                    <span style="font-size:0.75rem; color:#667085; font-weight:600;">Publisher Verdict:</span>
                     <span style="background-color:#FFDAD6; color:#93000A; border:1px solid #FFB4AB; font-size:11px; font-weight:700; padding:2px 8px; border-radius:3px;">
                         {html.escape(verdict)}
                     </span>
                 </div>
-                {f'<a href="{html.escape(source_url)}" target="_blank" style="color:#167C80; font-size:0.8rem; font-weight:600; text-decoration:none;">Inspect Original Fact-Check Article ↗</a>' if source_url else '<span style="color:#167C80; font-size:0.8rem; font-weight:600;">Inspect Original Fact-Check Article ↗</span>'}
+                {f'<a href="{html.escape(source_url)}" target="_blank" style="color:#167C80; font-size:0.8rem; font-weight:600; text-decoration:none;">Inspect Original Record ↗</a>' if source_url else '<span style="color:#167C80; font-size:0.8rem; font-weight:600;">Original Record Link Unavailable</span>'}
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:0.75rem; color:#667085;">
-                <span>Cross-referenced across ClaimReview schema</span>
-                <span style="color:#167C80; font-weight:600;">🔄 Registry Sync: Live</span>
+                <span>BM25Plus Lexical Match Index: {score if score is not None else "N/A"}</span>
+                <span style="color:#167C80; font-weight:600;">Archive Size: 8 Curated Cases</span>
             </div>
         </article>
         """,

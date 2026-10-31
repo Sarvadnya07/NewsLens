@@ -49,6 +49,8 @@ class FakeNewsScreeningModel:
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
                 self.vectorizer = joblib.load(self.vectorizer_path)
                 self.classifier = joblib.load(self.classifier_path)
+                if self.classifier is not None and not hasattr(self.classifier, "multi_class"):
+                    self.classifier.multi_class = "auto"
             logger.info("Loaded vectorizer and classifier artifacts successfully.")
         except Exception as e:
             logger.error("Failed to load model artifacts: %s", str(e))
@@ -58,6 +60,38 @@ class FakeNewsScreeningModel:
     @property
     def is_ready(self) -> bool:
         return self.vectorizer is not None and self.classifier is not None
+
+    def get_influential_tokens(self, text: str, top_n: int = 5) -> list[tuple[str, str]]:
+        """Extracts actual non-zero features and their model coefficients for the given text."""
+        if not self.is_ready:
+            return []
+        try:
+            import numpy as np
+
+            cleaned = clean_text(text)
+            X = self.vectorizer.transform([cleaned])
+            feature_names = np.array(self.vectorizer.get_feature_names_out())
+            coefs = self.classifier.coef_[0]
+            non_zero_indices = X.nonzero()[1]
+            if len(non_zero_indices) == 0:
+                return []
+
+            token_weights = []
+            for idx in non_zero_indices:
+                token = feature_names[idx]
+                w = coefs[idx]
+                token_weights.append((token, w))
+
+            # Sort by absolute impact
+            token_weights.sort(key=lambda item: abs(item[1]), reverse=True)
+            formatted = []
+            for tok, weight in token_weights[:top_n]:
+                sign = "+" if weight >= 0 else "-"
+                formatted.append((tok.upper(), f"{sign}{abs(weight):.2f}"))
+            return formatted
+        except Exception as e:
+            logger.debug("Failed to extract influential tokens: %s", e)
+            return []
 
     def predict(self, text: str) -> Dict[str, Any]:
         """
@@ -122,27 +156,31 @@ class FakeNewsScreeningModel:
 
         X = self.vectorizer.transform([cleaned])
         proba = self.classifier.predict_proba(X)[0]
-        # Class 0 = Fake/Misleading, Class 1 = True/Credible
+        # Class 0 = lower-veracity LIAR label group, Class 1 = higher-veracity group
         prob_fake = float(proba[0])
         prob_true = float(proba[1])
 
         pred_class = int(self.classifier.predict(X)[0])
-        label = "Credible / Plausible" if pred_class == 1 else "Suspect / Potentially Misleading"
-        confidence = prob_true if pred_class == 1 else prob_fake
+        label = (
+            "Higher-veracity linguistic pattern"
+            if pred_class == 1
+            else "Lower-veracity linguistic pattern"
+        )
+        model_score = prob_true if pred_class == 1 else prob_fake
 
         # Explain uncertainty when probability is close to decision boundary
         boundary_margin = abs(prob_true - prob_fake)
         is_uncertain = boundary_margin < 0.15
 
         uncertainty_note = (
-            "Model Advisory: This score reflects statistical linguistic patterns learned from the LIAR benchmark. "
-            "It is NOT a factual truth determination and has NOT verified real-world events. "
-            "Because this model was trained on political claims, Indian news contexts may introduce domain shift. "
+            "Model Advisory: This score reflects statistical linguistic patterns learned from the US political LIAR benchmark. "
+            "It is a heuristic linguistic screening signal, NOT a factual verification, truth determination, or judicial validation. "
+            "Because this model was trained on political claims, Indian news contexts introduce substantial domain shift. "
             "Always inspect multi-source publisher coverage and accredited fact-checking evidence."
         )
         if is_uncertain:
             uncertainty_note = (
-                "High Uncertainty: The prediction is close to the 50/50 decision threshold. "
+                "Uncertain / Insufficient Signal: Model output is close to the decision boundary (margin < 0.15). "
                 + uncertainty_note
             )
         if input_truncated:
@@ -151,15 +189,19 @@ class FakeNewsScreeningModel:
                 + uncertainty_note
             )
 
+        tokens = self.get_influential_tokens(text, top_n=6)
+
         return {
             "status": "success",
             "input_truncated": input_truncated,
             "label": label,
             "raw_class": pred_class,
-            "confidence": round(confidence, 4),
+            "confidence": round(model_score, 4),
+            "model_score": round(model_score, 4),
             "prob_fake": round(prob_fake, 4),
             "prob_true": round(prob_true, 4),
             "is_uncertain": is_uncertain,
             "cleaned_text": cleaned,
             "uncertainty_note": uncertainty_note,
+            "tokens": tokens,
         }

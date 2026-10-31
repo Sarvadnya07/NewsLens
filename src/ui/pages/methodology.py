@@ -28,6 +28,25 @@ def load_evaluation_metrics():
 
 
 def render_methodology_page(service: NewsLensService):
+    metrics = load_evaluation_metrics()
+    acc_str = f"{metrics['accuracy'] * 100:.1f}%" if metrics else "metrics unavailable"
+    prec_str = f"{metrics['macro_precision'] * 100:.1f}%" if metrics else "metrics unavailable"
+    rec_str = f"{metrics['macro_recall'] * 100:.1f}%" if metrics else "metrics unavailable"
+    f1_str = f"{metrics['macro_f1']:.3f}" if metrics else "metrics unavailable"
+    test_samples_str = f"{metrics.get('official_test_samples', 1278):,}" if metrics else "1,278"
+    train_samples_str = f"{metrics.get('train_samples', 10269):,}" if metrics else "10,269"
+    valid_samples_str = f"{metrics.get('valid_samples', 1277):,}" if metrics else "1,277"
+    total_samples = (
+        (
+            metrics.get("train_samples", 10269)
+            + metrics.get("valid_samples", 1277)
+            + metrics.get("official_test_samples", 1278)
+        )
+        if metrics
+        else 12824
+    )
+    total_samples_str = f"{total_samples:,}"
+
     render_page_header(
         title="Methodology & Data Sources",
         subtitle="Technical architecture, probabilistic machine learning pipeline, curated dataset corpora, and empirical limitations governing the Indian Media Observatory screening framework.",
@@ -56,12 +75,12 @@ def render_methodology_page(service: NewsLensService):
                         1. Ingestion Engine
                     </div>
                     <div style="font-size:0.78rem; color:#42474D; line-height:1.45;">
-                        Continuous querying of GDELT Project v2 API alongside vetted national and regional RSS feeds with deduplication, temporal parsing, and geographic geocoding across Indian state beats.
+                        Bounded streaming intake from 6 national RSS news feeds (max 5MB, 10s timeout, SSRF-safe) alongside the GDELT Project v2 API with rate-throttled queries and schema normalization.
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E4E7EC; padding-top:8px; margin-top:10px; font-size:10px; color:#667085;">
-                    <span>Latency Trigger:</span>
-                    <span class="nl-badge nl-badge-navy">&lt; 500s Poll Rate</span>
+                    <span>Intake Policy:</span>
+                    <span class="nl-badge nl-badge-navy">Synchronous / 5s GDELT Throttle</span>
                 </div>
             </article>
             """,
@@ -80,12 +99,12 @@ def render_methodology_page(service: NewsLensService):
                         2. Preprocessing & NLP
                     </div>
                     <div style="font-size:0.78rem; color:#42474D; line-height:1.45;">
-                        Indic script normalization, entity recognition (NER), noise stripping, and TF-IDF vectorization with sub-gram and n-gram extraction (1, 3-grams) filtered through custom stopword lexicons.
+                        Deterministic text cleaning (URL removal, punctuation stripping, lowercasing) and sublinear TF-IDF vectorization with unigrams and bigrams (1, 2-grams) filtered through custom English stopwords.
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E4E7EC; padding-top:8px; margin-top:10px; font-size:10px; color:#667085;">
                     <span>Feature Dim:</span>
-                    <span class="nl-badge nl-badge-teal">48,000 Vocab Max</span>
+                    <span class="nl-badge nl-badge-teal">10,000 Vocab Max</span>
                 </div>
             </article>
             """,
@@ -104,12 +123,12 @@ def render_methodology_page(service: NewsLensService):
                         3. Probabilistic Classifier
                     </div>
                     <div style="font-size:0.78rem; color:#42474D; line-height:1.45;">
-                        Logistic Regression baseline with L2 regularization penalty trained on curated Indian & global news framing datasets, outputting calibrated confidence scores without categorical binaries.
+                        Logistic Regression with L2 regularization penalty (C=1.0, L-BFGS solver) trained on the benchmark LIAR corpus, outputting model decision class scores and influential lexical tokens.
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E4E7EC; padding-top:8px; margin-top:10px; font-size:10px; color:#667085;">
                     <span>Algorithm:</span>
-                    <span class="nl-badge nl-badge-navy">Logit (L2 Solver: SAGA)</span>
+                    <span class="nl-badge nl-badge-navy">Logit (L2 Solver: L-BFGS)</span>
                 </div>
             </article>
             """,
@@ -128,12 +147,12 @@ def render_methodology_page(service: NewsLensService):
                         4. Multi-Source Evidence
                     </div>
                     <div style="font-size:0.78rem; color:#42474D; line-height:1.45;">
-                        Cosine similarity matching against external fact-check registries (IFCN signatories) and publisher syndication clusters to isolate original investigative journalism from echo chambers.
+                        Rank-BM25Plus candidate retrieval across local verified fact-checks alongside TF-IDF cosine similarity clustering over recent Indian news to corroborate reporting or detect echo chambers.
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #E4E7EC; padding-top:8px; margin-top:10px; font-size:10px; color:#667085;">
                     <span>Corroboration:</span>
-                    <span class="nl-badge nl-badge-teal">Cosine ≥ 0.78 Index</span>
+                    <span class="nl-badge nl-badge-teal">BM25Plus & Cosine Cluster</span>
                 </div>
             </article>
             """,
@@ -156,10 +175,10 @@ def render_methodology_page(service: NewsLensService):
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; font-size:11px;">
                     <span style="display:flex; align-items:center; gap:4px; color:#167C80; font-weight:600;">
-                        <span style="width:6px; height:6px; border-radius:50%; background:#167C80;"></span> Live Microservice
+                        <span style="width:6px; height:6px; border-radius:50%; background:#167C80;"></span> Synchronous Module
                     </span>
                     <span style="display:flex; align-items:center; gap:4px; color:#667085;">
-                        <span style="width:6px; height:6px; border-radius:50%; background:#667085;"></span> Batch Synchronization
+                        <span style="width:6px; height:6px; border-radius:50%; background:#667085;"></span> Local Data Store
                     </span>
                 </div>
             </div>
@@ -214,7 +233,7 @@ def render_methodology_page(service: NewsLensService):
                         <span>CLASSIFIER</span> <span>📊</span>
                     </div>
                     <div style="font-size:0.9rem; font-weight:700; color:#183B56; margin-bottom:2px;">Logistic Regression</div>
-                    <div style="font-size:0.75rem; color:#667085;">L2 calibrated probability vector across sensation/panic framing markers</div>
+                    <div style="font-size:0.75rem; color:#667085;">L2 model probability vector across lexical and stylistic framing markers</div>
                 </div>
             </div>
 
@@ -225,7 +244,7 @@ def render_methodology_page(service: NewsLensService):
                         <span>EVIDENCE VERIFICATION</span> <span>📑</span>
                     </div>
                     <div style="font-size:0.9rem; font-weight:700; color:#183B56; margin-bottom:2px;">Evidence Engine</div>
-                    <div style="font-size:0.75rem; color:#667085;">Active indexing of accredited news wires (PTI, ANI regional process)</div>
+                    <div style="font-size:0.75rem; color:#667085;">Local 8-record fact-check archive (PIB, Alt News, BOOM) + live RSS/GDELT coverage</div>
                 </div>
 
                 <div style="background:#F8F9FF; border:1px solid #D9E3F6; border-radius:4px; padding:12px;">
@@ -233,7 +252,7 @@ def render_methodology_page(service: NewsLensService):
                         <span>CONTEXT SYNTHESIS</span> <span>⚖️</span>
                     </div>
                     <div style="font-size:0.9rem; font-weight:700; color:#183B56; margin-bottom:2px;">Fact-Check & Cluster Match</div>
-                    <div style="font-size:0.75rem; color:#667085;">Cosine matrix against published IFCN findings & syndication clusters</div>
+                    <div style="font-size:0.75rem; color:#667085;">BM25Plus lookup over the local fact-check archive, plus TF-IDF cosine clustering</div>
                 </div>
 
                 <div style="background:#183B56; color:#FFFFFF; border-radius:4px; padding:12px;">
@@ -256,17 +275,17 @@ def render_methodology_page(service: NewsLensService):
 
     with col_perf:
         st.markdown(
-            """
+            f"""
             <article class="nl-card" role="region" aria-label="Model Performance & Calibration" style="padding:18px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="font-size:1.15rem; color:#183B56;">📊</span>
                         <div>
                             <div style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Model Performance & Calibration</div>
-                            <div style="font-size:0.75rem; color:#667085;">Empirical validation metrics across multi-fold stratified Indian media splits</div>
+                            <div style="font-size:0.75rem; color:#667085;">Empirical validation metrics on official untouched LIAR test partition</div>
                         </div>
                     </div>
-                    <span class="nl-badge nl-badge-teal" style="font-size:10px;">Validation v2.1</span>
+                    <span class="nl-badge nl-badge-teal" style="font-size:10px;">Official Test Split</span>
                 </div>
 
                 <!-- Structured Table matching screenshot -->
@@ -283,25 +302,25 @@ def render_methodology_page(service: NewsLensService):
                         <tbody>
                             <tr style="border-bottom:1px solid #E4E7EC;">
                                 <td style="padding:10px 8px; font-weight:700; color:#183B56;">Accuracy</td>
-                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">64.5%</td>
+                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">{acc_str}</td>
                                 <td style="padding:10px 8px; color:#667085;">50.0%</td>
-                                <td style="padding:10px 8px; color:#42474D; font-size:0.75rem;">k-fold stratified cross-validation (n=4,200 labeled samples)</td>
+                                <td style="padding:10px 8px; color:#42474D; font-size:0.75rem;">Official test partition (n={test_samples_str} independent labeled samples)</td>
                             </tr>
                             <tr style="border-bottom:1px solid #E4E7EC;">
                                 <td style="padding:10px 8px; font-weight:700; color:#183B56;">Precision (Macro)</td>
-                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">62.7%</td>
+                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">{prec_str}</td>
                                 <td style="padding:10px 8px; color:#667085;">50.0%</td>
                                 <td style="padding:10px 8px; color:#42474D; font-size:0.75rem;">Target class lexical framing detection with conservative false-alarm control</td>
                             </tr>
                             <tr style="border-bottom:1px solid #E4E7EC;">
                                 <td style="padding:10px 8px; font-weight:700; color:#183B56;">Recall (Macro)</td>
-                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">65.3%</td>
+                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">{rec_str}</td>
                                 <td style="padding:10px 8px; color:#667085;">50.0%</td>
-                                <td style="padding:10px 8px; color:#42474D; font-size:0.75rem;">Misleading framing detection sensitivity under diverse vernacular translation</td>
+                                <td style="padding:10px 8px; color:#42474D; font-size:0.75rem;">Misleading framing detection sensitivity under diverse political claim phrasing</td>
                             </tr>
                             <tr>
                                 <td style="padding:10px 8px; font-weight:700; color:#183B56;">Macro F1-Score</td>
-                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">0.639</td>
+                                <td style="padding:10px 8px; font-weight:700; color:#167C80;">{f1_str}</td>
                                 <td style="padding:10px 8px; color:#667085;">0.500</td>
                                 <td style="padding:10px 8px; color:#42474D; font-size:0.75rem;">Harmonic mean across balanced test folds without class re-weighting penalty</td>
                             </tr>
@@ -310,7 +329,7 @@ def render_methodology_page(service: NewsLensService):
                 </div>
 
                 <div style="background:#F8F9FF; border:1px solid #D9E3F6; border-radius:4px; padding:10px 12px; margin-top:14px; font-size:0.75rem; color:#42474D; line-height:1.4;">
-                    <strong>ℹ️ Methodological Caveat:</strong> Evaluation figures represent experimental test-bench validation; live production metrics depend on real-world news drift, adversarial phrasing, and domain novelty.
+                    <strong>ℹ️ Methodological Caveat:</strong> Evaluation figures represent experimental test-bench validation on US political statements (LIAR benchmark); live Indian news metrics depend on local entities, regional drift, and domain novelty.
                 </div>
             </article>
             """,
@@ -319,21 +338,21 @@ def render_methodology_page(service: NewsLensService):
 
     with col_split:
         st.markdown(
-            """
+            f"""
             <article class="nl-card" role="region" aria-label="Dataset Corpus Split" style="padding:18px 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="font-size:1.15rem; color:#183B56;">🍩</span>
-                        <div style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Dataset Corpus Split</div>
+                        <div style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">LIAR Benchmark Partitions</div>
                     </div>
-                    <span style="font-size:11px; color:#667085;">Curated benchmark composition</span>
+                    <span style="font-size:11px; color:#667085;">Standard split composition</span>
                 </div>
 
                 <!-- Donut Chart Simulator Spec matching Stitch -->
                 <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:16px;">
                     <div style="width:130px; height:130px; border-radius:50%; border:16px solid #183B56; border-top-color:#167C80; border-right-color:#9AF1F5; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;">
-                        <div style="font-size:1.35rem; font-weight:700; color:#183B56; line-height:1;">4,200</div>
-                        <div style="font-size:10px; color:#667085; text-transform:uppercase;">Articles</div>
+                        <div style="font-size:1.35rem; font-weight:700; color:#183B56; line-height:1;">{total_samples_str}</div>
+                        <div style="font-size:10px; color:#667085; text-transform:uppercase;">Statements</div>
                     </div>
                 </div>
 
@@ -342,30 +361,30 @@ def render_methodology_page(service: NewsLensService):
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="width:8px; height:8px; border-radius:50%; background:#183B56; display:inline-block;"></span>
-                            <span style="color:#183B56; font-weight:600;">Indian National & State Press</span>
+                            <span style="color:#183B56; font-weight:600;">Training Partition (Cleaned)</span>
                         </div>
-                        <span style="font-weight:700; color:#183B56;">65% <span style="font-weight:normal; color:#667085; font-size:11px;">(2,520)</span></span>
+                        <span style="font-weight:700; color:#183B56;">80.1% <span style="font-weight:normal; color:#667085; font-size:11px;">({train_samples_str})</span></span>
                     </div>
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="width:8px; height:8px; border-radius:50%; background:#167C80; display:inline-block;"></span>
-                            <span style="color:#183B56; font-weight:600;">Fact-Check Repositories (IFCN)</span>
+                            <span style="color:#183B56; font-weight:600;">Diagnostic Validation Split</span>
                         </div>
-                        <span style="font-weight:700; color:#183B56;">25% <span style="font-weight:normal; color:#667085; font-size:11px;">(1,050)</span></span>
+                        <span style="font-weight:700; color:#183B56;">10.0% <span style="font-weight:normal; color:#667085; font-size:11px;">({valid_samples_str})</span></span>
                     </div>
 
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="width:8px; height:8px; border-radius:50%; background:#9AF1F5; display:inline-block;"></span>
-                            <span style="color:#183B56; font-weight:600;">Regional Vernacular Feeds</span>
+                            <span style="color:#183B56; font-weight:600;">Official Test Partition (Cleaned)</span>
                         </div>
-                        <span style="font-weight:700; color:#183B56;">10% (420)</span>
+                        <span style="font-weight:700; color:#183B56;">10.0% ({test_samples_str})</span>
                     </div>
                 </div>
 
                 <div style="text-align:center; font-size:10px; color:#667085; font-family:monospace; margin-top:16px;">
-                    Stratified sampling interval: Q1 2023 - Q4 2024
+                    Benchmark: Wang (2017) LIAR PolitiFact Corpus (TSV Ingestion)
                 </div>
             </article>
             """,
@@ -412,11 +431,11 @@ def render_methodology_page(service: NewsLensService):
                             <span>⚖️</span> 2. Dataset Bias
                         </div>
                         <div style="font-size:0.75rem; color:#42474D; line-height:1.45; margin-bottom:10px;">
-                            Training sets may over-represent metropolitan English-language journalism styles, introducing caloric regional calibration skews when evaluating vernacular translations from Hindi, Tamil, or Bengali.
+                            Training sets may over-represent metropolitan English-language journalism styles, introducing regional and calibration skew when evaluating vernacular material from Hindi, Tamil, or Bengali.
                         </div>
                     </div>
-                    <div style="font-size:10px; font-weight:700; color:#167C80;">
-                        ☑ Linguistic Drift Monitored
+                    <div style="font-size:10px; font-weight:700; color:#B7791F;">
+                        ⚠ No Drift Monitoring
                     </div>
                 </div>
 
@@ -463,8 +482,8 @@ def render_methodology_page(service: NewsLensService):
                             Emerging breaking news inevitably exhibits evidentiary vacuums in the immediate 30–60 minutes following a major disaster or political event, necessitating explicit cautionary analyst alerts.
                         </div>
                     </div>
-                    <div style="font-size:10px; font-weight:700; color:#167C80;">
-                        ☑ Real-Time Caution Threshold
+                    <div style="font-size:10px; font-weight:700; color:#B7791F;">
+                        ⚠ No Automated Alerts
                     </div>
                 </div>
 
@@ -537,34 +556,38 @@ def render_methodology_page(service: NewsLensService):
                     </div>
 
                     <div style="background:#EFF3FF; border-radius:3px; padding:6px 8px; margin-top:14px; font-size:10px; color:#183B56;">
-                        Pipeline Threading: <strong>Background Daemon Sync</strong>
+                        Execution Model: <strong>Deterministic Synchronous Pipeline</strong>
                     </div>
                 </div>
 
                 <!-- Right Code Snippet Box -->
                 <div style="background:#0F172A; color:#E2E8F0; border-radius:4px; padding:14px 16px; font-family:monospace; font-size:11px; line-height:1.5; overflow-x:auto;">
                     <div style="display:flex; justify-content:space-between; color:#64748B; border-bottom:1px solid #334155; padding-bottom:6px; margin-bottom:8px;">
-                        <span>PIPELINE_RUNNER.PY</span>
-                        <span>SCRIPTLIB.SCIKIT & STREAMLIT</span>
+                        <span>SRC/ML/TRAIN.PY</span>
+                        <span>SCIKIT-LEARN & RANK-BM25</span>
                     </div>
                     <pre style="margin:0; color:#E2E8F0;">import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 import sqlite3, feedparser
 
-# 1. Ingestion & GDELT Event Group
+# 1. Pipeline Architecture Specification
 def load_pipeline():
-    vectorizer = TfidfVectorizer(ngram_range=(1, 3), max_features=48000, sublinear_tf=True)
-    classifier = LogisticRegression(C=1.0, penalty='l2', solver='saga')
+    vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=10000, sublinear_tf=True)
+    classifier = LogisticRegression(
+        C=1.0, solver='lbfgs', max_iter=1000, class_weight='balanced', random_state=42
+    )
     return vectorizer, classifier
 
-# 2. Forensic Valid Source Screening Signal
+# 2. Forensic Credibility Screening Signal
 def evaluate_article(text: str, vectorizer, classifier):
+    text_clean = clean_text(text)
     vec = vectorizer.transform([text_clean])
-    probabilities = classifier.predict_proba(vec)[0] # Returns [p_standard, p_sensational]
+    probabilities = classifier.predict_proba(vec)[0]  # [p_lower, p_higher]
     return {
-        "framing_entropy": float(probabilities[1]),
-        "calibration_status": "Corroborated" if probabilities[1] &lt; 0.35 else "Disputed"
+        "model_score": float(max(probabilities)),
+        "is_higher_veracity_pattern": bool(classifier.predict(vec)[0] == 1),
+        "status": "Screened"
     }</pre>
                 </div>
             </div>

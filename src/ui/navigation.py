@@ -36,6 +36,7 @@ def init_session_state() -> None:
     """Safely initializes session-state defaults and mirrors URL params on first load."""
     defaults: Dict[str, Any] = {
         "current_page": PAGE_DASHBOARD,
+        "nav_origin": None,
         "analyzed_text": "",
         "selected_article_for_evidence": None,
         "monitor_query": "",

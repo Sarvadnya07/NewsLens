@@ -11,13 +11,15 @@
 - **License / Terms:** Permitted for academic research, education, and benchmark evaluation.
 - **Original Schema:** 14 columns including ID, speaker, context, credit history, and 6-class truth labels (`true`, `mostly-true`, `half-true`, `barely-true`, `false`, `pants-fire`).
 - **NewsLens Adaptation:**
-  - Evaluated on binary classification: `True / Credible` vs `False / Misleading`.
-  - Training Set: 10,240 records (`train.csv`).
-  - Held-out Test Set: 2,539 records (after removing 12 duplicate leakage instances present in `test.csv`).
+  - Evaluated on binary classification: `True / Credible` (1) vs `False / Misleading` (0).
+  - Evaluated directly on the canonical TSV distribution (`liar_dataset/`) using `csv.QUOTE_NONE`.
+  - Training Partition: 10,269 records (`train.tsv`).
+  - Diagnostic Validation Partition: 1,277 records (purged 7 duplicate statement collisions with train from 1,284 raw).
+  - Official Untouched Test Partition: 1,278 records (purged 5 duplicate statement collisions with train from 1,283 raw).
 - **Data Quality & Leakage Audit:**
-  - String normalization and deduplication conducted before vectorization.
+  - Standard LIAR 3-way partition boundaries strictly preserved directly from original TSVs (`train.tsv`, `valid.tsv`, `test.tsv`).
   - TF-IDF vocabulary fitted exclusively on training statements (zero vectorizer contamination).
-  - Evaluated on held-out test split (Accuracy: `61.80%`, Macro F1: `0.6158`).
+  - Evaluated on official held-out test split (Accuracy: `63.07%`, Macro F1: `0.6262`, Weighted F1: `0.6316`).
 
 ---
 
@@ -49,7 +51,7 @@
   - *NDTV* (India News)
   - *The Indian Express* (National Desk)
   - *Hindustan Times* (National News)
-  - *Deccan Herald* (National Desk)
+  - *Livemint* (National & Economy Desk)
 - **GDELT 2.0 Doc API:**
   - Search filter: `sourcecountry:IN` and `sourcelang:English`.
 - **Attribution & Rights:**

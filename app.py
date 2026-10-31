@@ -4,6 +4,8 @@ Near-Real-Time Indian News Monitoring and Misinformation Screening
 Using Multi-Source Evidence, BM25 Retrieval, and Machine Learning.
 """
 
+import logging
+
 import streamlit as st
 
 from src.services.news_service import NewsLensService
@@ -33,6 +35,14 @@ st.set_page_config(
 
 # Apply Centralized Theme and Typography
 apply_theme()
+
+# Application logging: INFO diagnostics from src.* must be visible at runtime
+# (without this, INFO records were dropped and only WARNING+ escaped via lastResort).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logging.getLogger("src").setLevel(logging.INFO)
 
 
 @st.cache_resource

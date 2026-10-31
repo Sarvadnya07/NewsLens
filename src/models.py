@@ -1,9 +1,64 @@
 """Normalized data models for NewsLens India."""
 
+import logging
 import urllib.parse
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
+
+# Additional non-ISO layouts seen in publisher feeds. RFC 822 variants are
+# handled by email.utils.parsedate_to_datetime before these are attempted.
+_FALLBACK_DATE_FORMATS = (
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d",
+    "%d %b %Y %H:%M:%S",
+    "%d %B %Y %H:%M:%S",
+)
+
+
+def normalize_published_at(value: Any) -> str:
+    """Returns *value* as an ISO-8601 UTC timestamp, or an empty string.
+
+    Publication dates arrive from feeds in several shapes (ISO-8601, RFC 822,
+    naive local times). Storing them verbatim made string-based sorting and
+    date filtering incorrect, so every timestamp is normalized to one
+    comparable, timezone-aware representation at the domain boundary.
+
+    Unparseable values return an empty string rather than the original text:
+    the raw value is never silently presented as a valid timestamp, and
+    consumers fall back to ``ingested_at``.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        text = str(value).strip()
+        if not text:
+            return ""
+        dt = None
+        try:
+            dt = datetime.fromisoformat(text)
+        except ValueError:
+            try:
+                dt = parsedate_to_datetime(text)
+            except (TypeError, ValueError, IndexError):
+                for fmt in _FALLBACK_DATE_FORMATS:
+                    try:
+                        dt = datetime.strptime(text, fmt)
+                        break
+                    except ValueError:
+                        continue
+        if dt is None:
+            logger.debug("Unparseable publication date retained as metadata only: %r", text)
+            return ""
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat()
 
 
 def canonicalize_url(url: str) -> str:
@@ -69,6 +124,12 @@ class NormalizedArticle:
     def __post_init__(self):
         if self.url:
             self.url = canonicalize_url(self.url)
+        raw_published = self.published_at
+        self.published_at = normalize_published_at(raw_published)
+        if self.published_at == "" and raw_published:
+            metadata = dict(self.raw_metadata or {})
+            metadata.setdefault("published_at_raw", str(raw_published))
+            self.raw_metadata = metadata
         if not self.ingested_at:
             self.ingested_at = datetime.now(timezone.utc).isoformat()
 

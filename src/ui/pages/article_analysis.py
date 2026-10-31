@@ -8,6 +8,8 @@ Diagnostic Workbench:
 - Evidence limitations and analyst recommendations.
 """
 
+import html
+
 import streamlit as st
 
 from src.services.news_service import NewsLensService
@@ -20,6 +22,8 @@ from src.ui.navigation import (
     navigate_to,
 )
 
+# Illustrative, clearly-labelled synthetic inputs for trying the workbench.
+# They are demonstration strings, not scraped news and not real fact-check cases.
 SAMPLE_CLAIMS = [
     (
         "Viral Railway Fare Hike (PIB Fact Check)",
@@ -37,34 +41,38 @@ SAMPLE_CLAIMS = [
 
 
 def render_article_analysis_page(service: NewsLensService):
+    model_ready = service.ml_model.is_ready
+    status_label = "Model: LIAR Baseline Ready" if model_ready else "Model: Not Loaded"
+
     render_page_header(
         title="Analyze Article",
-        subtitle="Screen submitted news text and examine supporting evidence using forensic lexical calibration and indexed verification registers.",
+        subtitle="Screen submitted news text and examine supporting evidence using lexical pattern analysis and indexed verification registers.",
         meta_tag="DIAGNOSTIC WORKBENCH",
-        status_label="Model v1.2-sample Ready • Pipeline Latency: ~140ms",
+        status_label=status_label,
     )
 
-    # Return pathway banner if arriving from News Monitor
-    if st.session_state.get("monitor_query") or st.session_state.get("analyzed_text"):
+    # Return pathway banner only when the session actually arrived from the monitor.
+    if st.session_state.get("nav_origin") == "monitor":
         c_nav_left, c_nav_right = st.columns([8, 2])
         with c_nav_left:
             st.caption("Active Investigation Session")
         with c_nav_right:
             if st.button("← Return to Monitor", use_container_width=True):
-                navigate_to(PAGE_EVIDENCE_COVERAGE if False else "News Monitor")
+                st.session_state["nav_origin"] = None
+                navigate_to("News Monitor")
                 st.rerun()
 
-    current_text = st.session_state.get("analyzed_text", "")
+    # Text arriving from another page (or from the example/clear buttons) is
+    # staged in ``pending_article_text``. A widget's value cannot be rewritten
+    # after it is created in the same run, so the staged text is applied to the
+    # text-area key before the widget is instantiated.
+    pending_text = st.session_state.pop("pending_article_text", None)
+    if pending_text is not None:
+        st.session_state["article_input_area"] = pending_text
+        st.session_state["analyzed_text"] = pending_text
+        st.session_state.pop("current_analysis_result", None)
 
-    # Main Input Box matching Stitch design
-    default_claim = (
-        "URGENT: Ministry of Railways has announced an immediate 15% increase across all passenger and express train fares effective from the first of next month. "
-        "Circular claims passenger concessions will also be suspended indefinitely due to operational budget adjustments. "
-        "Check full revised timetable and fare list immediately before bookings close."
-    )
-    if not current_text:
-        current_text = default_claim
-        st.session_state["analyzed_text"] = default_claim
+    example_claim = SAMPLE_CLAIMS[0][1]
 
     with st.container():
         st.markdown(
@@ -84,7 +92,6 @@ def render_article_analysis_page(service: NewsLensService):
 
         user_text = st.text_area(
             "Article Text",
-            value=current_text,
             height=125,
             placeholder="Type or paste article headline, dispatch excerpt, or social circular here...",
             label_visibility="collapsed",
@@ -102,20 +109,22 @@ def render_article_analysis_page(service: NewsLensService):
                 <div style="font-size:0.78rem; color:#667085; display:flex; align-items:center; gap:8px; padding-top:6px;">
                     <span>{char_count} characters (approx {word_count} words)</span>
                     <span>•</span>
-                    <span style="color:#167C80; font-weight:600;">🛡️ Input Sanitized</span>
+                    <span style="color:#167C80; font-weight:600;">🔒 Escaped before rendering</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
         with c_btn_load:
-            if st.button("📄 Load Example Claim", use_container_width=True):
-                st.session_state["analyzed_text"] = default_claim
+            if st.button(
+                "📄 Load Example Claim",
+                use_container_width=True,
+                help="Loads a synthetic demonstration claim (not a real report).",
+            ):
+                st.session_state["pending_article_text"] = example_claim
                 st.rerun()
         with c_btn_clear:
             if st.button("🗑️ Clear Input", use_container_width=True):
-                st.session_state["analyzed_text"] = ""
-                if "current_analysis_result" in st.session_state:
-                    del st.session_state["current_analysis_result"]
+                st.session_state["pending_article_text"] = ""
                 st.rerun()
         with c_btn_screen:
             run_analysis = st.button(
@@ -153,8 +162,16 @@ def render_article_analysis_page(service: NewsLensService):
             st.warning("Please enter or paste news text before running screening.")
         else:
             with st.spinner("Executing ML screening & retrieving multi-source evidence..."):
+                import time
+
+                t0 = time.perf_counter()
                 ml_result = service.screen_article_text(user_text)
+                inference_ms = (time.perf_counter() - t0) * 1000
+
+                t1 = time.perf_counter()
                 fc_results = service.retrieve_fact_checks(user_text, top_k=3)
+                retrieval_ms = (time.perf_counter() - t1) * 1000
+
                 related_coverage = service.find_related_news(user_text, top_n=4)
 
                 st.session_state["current_analysis_result"] = {
@@ -162,6 +179,8 @@ def render_article_analysis_page(service: NewsLensService):
                     "fact_checks": fc_results,
                     "related": related_coverage,
                     "analyzed_query": user_text,
+                    "inference_ms": inference_ms,
+                    "retrieval_ms": retrieval_ms,
                 }
 
     # Display 2x2 Grid Matching Stitch / DESIGN (1).md
@@ -180,71 +199,50 @@ def render_article_analysis_page(service: NewsLensService):
 
         # Top-Right: Related External Coverage Card
         with row1_col2:
+            related_items = res.get("related") or []
+            if related_items:
+                cards_html = []
+                for rel in related_items[:3]:
+                    art_obj = rel.get("article")
+                    score_val = rel.get("similarity", 0.0)
+                    sim_pct = int(score_val * 100)
+                    title_clean = html.escape(art_obj.title if art_obj else "Related Story")
+                    pub_clean = html.escape(art_obj.publisher if art_obj else "Indian Press")
+                    url_clean = html.escape(art_obj.url if art_obj else "#")
+                    cards_html.append(f"""
+                    <div style="border-bottom:1px solid #E4E7EC; padding-bottom:10px; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <div>
+                                <span class="nl-badge nl-badge-teal" style="font-size:10px;">Similarity {sim_pct}%</span>
+                                <span style="font-size:0.8rem; font-weight:600; color:#183B56; margin-left:6px;">{pub_clean}</span>
+                            </div>
+                            <a href="{url_clean}" target="_blank" style="font-size:0.75rem; color:#167C80; text-decoration:none;">View ↗</a>
+                        </div>
+                        <div style="font-size:0.95rem; font-weight:600; color:#183B56; font-family:'Newsreader', serif; margin-bottom:4px;">
+                            {title_clean}
+                        </div>
+                    </div>
+                    """)
+                items_rendered = "".join(cards_html)
+            else:
+                items_rendered = '<div style="font-size:0.82rem; color:#667085; padding:12px 0;">No matching coverage clusters identified in the current stored sample.</div>'
+
             st.markdown(
-                """
+                f"""
                 <article class="nl-card" role="region" aria-label="Related External Coverage" style="padding:18px 20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span style="font-size:1.15rem; color:#183B56;">📡</span>
                             <span style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Related External Coverage</span>
                         </div>
-                        <span class="nl-badge nl-badge-navy" style="font-size:10px;">GDELT / News Wire Index</span>
+                        <span class="nl-badge nl-badge-navy" style="font-size:10px;">TF-IDF Cosine Cluster</span>
                     </div>
 
                     <div style="background-color:#EFF3FF; border:1px solid #D9E3F6; border-radius:4px; padding:10px 12px; margin-bottom:14px; font-size:0.78rem; color:#183B56;">
-                        <span style="color:#167C80;">▼</span> 3 related articles retrieved matching entities: <strong>Indian Railways, fare revision, passenger concessions</strong>
+                        <span style="color:#167C80;">▼</span> {len(related_items)} related articles retrieved from local repository matching query vocabulary.
                     </div>
 
-                    <!-- Item 1: Official Clarification -->
-                    <div style="border-bottom:1px solid #E4E7EC; padding-bottom:10px; margin-bottom:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <div>
-                                <span class="nl-badge nl-badge-teal" style="font-size:10px;">Official Clarification</span>
-                                <span style="font-size:0.8rem; font-weight:600; color:#183B56; margin-left:6px;">The Hindu</span>
-                            </div>
-                            <span style="font-size:0.75rem; color:#667085;">2 days ago</span>
-                        </div>
-                        <div style="font-size:0.95rem; font-weight:600; color:#183B56; font-family:'Newsreader', serif; margin-bottom:4px;">
-                            Railway Ministry Clarifies No Revision in Passenger Tariffs Planned
-                        </div>
-                        <div style="font-size:0.75rem; color:#667085;">
-                            Wire Match: Ministry Press Briefing • <span style="color:#167C80; font-weight:600;">Corroborated by Spokesperson</span>
-                        </div>
-                    </div>
-
-                    <!-- Item 2: Syndicated Wire -->
-                    <div style="border-bottom:1px solid #E4E7EC; padding-bottom:10px; margin-bottom:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <div>
-                                <span class="nl-badge nl-badge-navy" style="font-size:10px;">Syndicated Wire</span>
-                                <span style="font-size:0.8rem; font-weight:600; color:#183B56; margin-left:6px;">PTI (Press Trust of India)</span>
-                            </div>
-                            <span style="font-size:0.75rem; color:#667085;">3 days ago</span>
-                        </div>
-                        <div style="font-size:0.95rem; font-weight:600; color:#183B56; font-family:'Newsreader', serif; margin-bottom:4px;">
-                            Social Media Rumors Prompt Railways to Reiterate Unchanged Ticket Costs
-                        </div>
-                        <div style="font-size:0.75rem; color:#667085;">
-                            Coverage Depth: High syndication (42 outlets)
-                        </div>
-                    </div>
-
-                    <!-- Item 3: Contextual Report -->
-                    <div style="padding-bottom:10px; margin-bottom:12px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <div>
-                                <span class="nl-badge nl-badge-amber" style="font-size:10px;">Contextual Report</span>
-                                <span style="font-size:0.8rem; font-weight:600; color:#183B56; margin-left:6px;">LiveMint</span>
-                            </div>
-                            <span style="font-size:0.75rem; color:#667085;">4 days ago</span>
-                        </div>
-                        <div style="font-size:0.95rem; font-weight:600; color:#183B56; font-family:'Newsreader', serif; margin-bottom:4px;">
-                            Old 2019 Circular Misrepresented as New Ticket Revision
-                        </div>
-                        <div style="font-size:0.75rem; color:#667085;">
-                            Disinformation Origin: Recycled visual document
-                        </div>
-                    </div>
+                    {items_rendered}
                 </article>
                 """,
                 unsafe_allow_html=True,
@@ -262,15 +260,13 @@ def render_article_analysis_page(service: NewsLensService):
             if fact_checks:
                 render_fact_check_card(fact_checks[0], 0)
             else:
-                default_fc = {
-                    "claim": "Viral notice claiming 15% across-the-board railway fare hike is fake and fabricated.",
-                    "fact_checker": "PIB Fact Check / News Checker India",
-                    "verdict": "Fabricated / False",
-                    "review_date": "Published 3 days ago",
-                    "source_url": "https://factcheck.pib.gov.in",
-                    "bm25_score": 8.8,
-                }
-                render_fact_check_card(default_fc, 0)
+                from src.ui.components import render_empty_state
+
+                render_empty_state(
+                    title="No Relevant Fact-Check Found",
+                    message="The local fact-check index (8 curated cases) contains no claims matching the queried vocabulary.",
+                    suggestion="Absence of an external fact check does not verify or disprove real-world claims. Check primary sources.",
+                )
 
         with row2_col2:
             st.markdown(
@@ -278,45 +274,45 @@ def render_article_analysis_page(service: NewsLensService):
                 <article class="nl-card" role="region" aria-label="Evidence Checklist & Limitations" style="padding:18px 20px;">
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
                         <span style="font-size:1.15rem; color:#183B56;">⚖️</span>
-                        <span style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Evidence Checklist & Limitations</span>
+                        <span style="font-size:1.1rem; font-weight:700; color:#183B56; font-family:'Newsreader', serif;">Evidence Synthesis & Limitations</span>
                     </div>
 
-                    <!-- Available Evidence -->
+                    <!-- Evaluation Safeguards -->
                     <div style="margin-bottom:14px;">
                         <div style="font-size:0.75rem; font-weight:700; color:#167C80; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                            <span>✔</span> AVAILABLE EVIDENCE
+                            <span>✔</span> SYSTEM BOUNDARIES & PROVENANCE
                         </div>
                         <div style="display:flex; align-items:flex-start; gap:8px; font-size:0.8rem; color:#182230; margin-bottom:6px;">
                             <span style="color:#167C80;">✔</span>
-                            <span>Official ministry press release exists denying any tariff change.</span>
+                            <span>Model operates as a lexical screening filter, not an automated tribunal of truth.</span>
                         </div>
                         <div style="display:flex; align-items:flex-start; gap:8px; font-size:0.8rem; color:#182230;">
                             <span style="color:#167C80;">✔</span>
-                            <span>Published fact-checks indexed from certified signatories (PIB / News Checker).</span>
+                            <span>Local fact-check retrieval is limited to 8 indexed public cases with verified source URLs.</span>
                         </div>
                     </div>
 
-                    <!-- Missing Evidence & Data Gaps -->
+                    <!-- Known Constraints -->
                     <div style="margin-bottom:14px;">
                         <div style="font-size:0.75rem; font-weight:700; color:#B7791F; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                            <span>⚠️</span> MISSING EVIDENCE & DATA GAPS
+                            <span>⚠️</span> METHODOLOGICAL CONSTRAINTS
                         </div>
                         <div style="display:flex; align-items:flex-start; gap:8px; font-size:0.8rem; color:#42474D; margin-bottom:6px;">
                             <span style="color:#667085;">○</span>
-                            <span>Original origin social media post author unverified (likely closed messaging dissemination).</span>
+                            <span>Uncalibrated model scores must not be interpreted as posterior probabilities of empirical truth.</span>
                         </div>
                         <div style="display:flex; align-items:flex-start; gap:8px; font-size:0.8rem; color:#42474D;">
                             <span style="color:#667085;">○</span>
-                            <span>No official scanned gazette attached with the viral forwarded claim text.</span>
+                            <span>Absence of a matching indexed fact check does not imply authenticity or veracity.</span>
                         </div>
                     </div>
 
                     <!-- Analytical Recommendation -->
                     <div style="background-color:#EFF3FF; border:1px solid #D9E3F6; border-radius:4px; padding:12px; font-size:0.78rem; color:#183B56; line-height:1.45;">
                         <div style="font-weight:700; color:#183B56; margin-bottom:4px; text-transform:uppercase; font-size:0.72rem; letter-spacing:0.03em;">
-                            ☑ ANALYTICAL RECOMMENDATION
+                            ☑ EDITORIAL DISCRETION REQUIRED
                         </div>
-                        Human editorial review recommended. Cross-verify against official <strong>Press Information Bureau (pib.gov.in)</strong> gazette or direct Indian Railway Board notifications before secondary syndication.
+                        Human researcher judgment required. Trace statements to primary sources, certified publisher reporting, or statutory gazettes before reaching editorial conclusions.
                     </div>
                 </article>
                 """,
