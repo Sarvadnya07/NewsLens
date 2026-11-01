@@ -5,6 +5,7 @@ import {
   Radio,
   FileSearch,
   Layers,
+  Plug,
   BookOpen,
   ShieldCheck,
   RotateCw,
@@ -18,6 +19,7 @@ const navItems = [
   { to: '/news', label: 'News Monitor', icon: Radio },
   { to: '/analyze', label: 'Analyze Article', icon: FileSearch },
   { to: '/evidence', label: 'Evidence & Coverage', icon: Layers },
+  { to: '/integrations', label: 'Integrations', icon: Plug },
   { to: '/methodology', label: 'Methodology', icon: BookOpen },
 ];
 

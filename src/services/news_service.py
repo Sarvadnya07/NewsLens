@@ -425,3 +425,61 @@ class NewsLensService:
         """Finds existing coverage relevant to an analyzed text snippet."""
         recent = self.get_recent_articles(limit=150)
         return self.deduplicator.find_related_to_query(query_text, recent, top_n=top_n)
+
+    def get_top_dashboard_stories(
+        self,
+        limit: int = 10,
+        source_type: Optional[str] = None,
+    ) -> List[NormalizedArticle]:
+        """Retrieves and curates a strictly bounded set of top stories (maximum 10).
+
+        Applies:
+        1. Bounded SQL candidate retrieval (fetch up to 4x limit recency-ordered).
+        2. Lexical & thematic deduplication via NewsDeduplicator clustering.
+        3. Publisher diversity capping (at most max(2, limit // 3) stories per publisher).
+        4. Strict hard-limit truncation before returning.
+        """
+        hard_limit = min(limit, 10)
+        candidate_pool = self.db.get_articles(
+            limit=hard_limit * 4,
+            source_type=source_type,
+            order_by="published_at",
+            ascending=False,
+        )
+
+        if not candidate_pool:
+            return []
+
+        # Deduplication & source diversity pass across the candidate pool
+        clusters = self.deduplicator.find_related_and_duplicates(candidate_pool)
+        selected: List[NormalizedArticle] = []
+        seen_cluster_primaries: set[str] = set()
+        publisher_counts: Dict[str, int] = {}
+        max_per_publisher = max(2, hard_limit // 3)
+
+        # First pass: Pick primary articles from distinct thematic clusters respecting publisher balance
+        for cl in clusters:
+            prim = cl["primary_article"]
+            if prim.id in seen_cluster_primaries:
+                continue
+
+            pub = prim.publisher
+            if publisher_counts.get(pub, 0) < max_per_publisher:
+                selected.append(prim)
+                seen_cluster_primaries.add(prim.id)
+                publisher_counts[pub] = publisher_counts.get(pub, 0) + 1
+
+            if len(selected) == hard_limit:
+                break
+
+        # Second pass: If slots remain, fill with remaining cluster primaries (relaxing diversity cap if needed)
+        if len(selected) < hard_limit:
+            for cl in clusters:
+                prim = cl["primary_article"]
+                if prim.id not in seen_cluster_primaries:
+                    selected.append(prim)
+                    seen_cluster_primaries.add(prim.id)
+                    if len(selected) == hard_limit:
+                        break
+
+        return selected[:hard_limit]

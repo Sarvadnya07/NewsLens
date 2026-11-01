@@ -23,6 +23,12 @@ class DashboardSummary(BaseModel):
     coverage_clusters_count: int
     fact_check_matches_count: int
     recent_articles: List[ArticleResponse]
+    top_stories_limit: int = Field(
+        10, description="Configured maximum hard limit for Dashboard Top Stories"
+    )
+    top_stories_count: int = Field(
+        0, description="Actual count of returned Top Stories articles (at most 10)"
+    )
     source_statuses: List[SourceStatusItem]
     sources_distribution: Dict[str, int] = Field(
         ...,

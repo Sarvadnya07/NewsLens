@@ -1,6 +1,8 @@
 """Normalized data models for NewsLens India."""
 
+import hashlib
 import logging
+import unicodedata
 import urllib.parse
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -102,6 +104,75 @@ def canonicalize_url(url: str) -> str:
         return url.strip()
 
 
+def detect_text_language(text: str, fallback_lang: str = "en") -> str:
+    """Detects text language from Unicode character scripts, respecting Indic languages.
+
+    If Indic scripts (Devanagari, Bengali, Tamil, Telugu, etc.) are present and dominant,
+    returns the appropriate language code. If Devanagari is dominant and fallback_lang is
+    a recognized Devanagari language ('hi', 'mr', 'sa'), respects the declared language.
+    Otherwise defaults to fallback_lang.
+    """
+    if not text or not isinstance(text, str):
+        return fallback_lang or "en"
+
+    counts = {"Devanagari": 0, "Bengali": 0, "Tamil": 0, "Telugu": 0, "Latin": 0}
+    for ch in text:
+        name = unicodedata.name(ch, "")
+        if "DEVANAGARI" in name:
+            counts["Devanagari"] += 1
+        elif "BENGALI" in name:
+            counts["Bengali"] += 1
+        elif "TAMIL" in name:
+            counts["Tamil"] += 1
+        elif "TELUGU" in name:
+            counts["Telugu"] += 1
+        elif "LATIN" in name:
+            counts["Latin"] += 1
+
+    total_indic = counts["Devanagari"] + counts["Bengali"] + counts["Tamil"] + counts["Telugu"]
+    if total_indic > 0 and (
+        counts["Devanagari"] > counts["Latin"] or counts["Bengali"] > counts["Latin"]
+    ):
+        if counts["Devanagari"] >= counts["Bengali"]:
+            clean_fallback = (fallback_lang or "").strip().lower()
+            if clean_fallback in ("hi", "mr", "sa"):
+                return clean_fallback
+            return "hi"
+        if counts["Bengali"] > counts["Devanagari"]:
+            return "bn"
+
+    return fallback_lang or "en"
+
+
+def generate_article_id(
+    canonical_url: str,
+    language: Optional[str] = "en",
+    source_type: Optional[str] = "rss",
+    prefix: Optional[str] = None,
+) -> str:
+    """Generates a stable, language-aware article variant ID.
+
+    For default English or unilingual articles, computes a 16-character SHA-256
+    hash of the canonical URL (matching the canonical NewsLens schema and legacy records).
+    For distinct language variants (e.g., Hindi or Marathi editions of a release or story
+    sharing a URL or differing by language), binds the language code into the hash so distinct
+    language representations are never discarded or collapsed.
+    """
+    clean_url = canonicalize_url(canonical_url)
+    clean_lang = (language or "en").strip().lower()
+    clean_prefix = prefix or (
+        f"{source_type}_" if source_type and source_type != "newsdata" else ""
+    )
+
+    if clean_lang and clean_lang != "en":
+        # Multi-language variant: bind language into hash to preserve variant identity
+        digest = hashlib.sha256(f"{clean_url}:{clean_lang}".encode("utf-8")).hexdigest()[:16]
+    else:
+        digest = hashlib.sha256(clean_url.encode("utf-8")).hexdigest()[:16]
+
+    return f"{clean_prefix}{digest}"
+
+
 @dataclass
 class NormalizedArticle:
     """Canonical representation of an ingested news article across all sources."""
@@ -133,17 +204,13 @@ class NormalizedArticle:
             self.raw_metadata = metadata
         if not self.ingested_at:
             self.ingested_at = datetime.now(timezone.utc).isoformat()
-        if self.origin not in ("rss", "gdelt", "newsdata", "manual", "unknown"):
-            if self.source_type in ("rss", "gdelt", "newsdata", "manual"):
+        valid_origins = ("rss", "gdelt", "newsdata", "currents", "guardian", "manual", "unknown")
+        if self.origin not in valid_origins:
+            if self.source_type in valid_origins:
                 self.origin = self.source_type
             else:
                 self.origin = "unknown"
-        elif self.origin == "unknown" and self.source_type in (
-            "rss",
-            "gdelt",
-            "newsdata",
-            "manual",
-        ):
+        elif self.origin == "unknown" and self.source_type in valid_origins:
             self.origin = self.source_type
 
     def to_dict(self) -> Dict[str, Any]:
@@ -153,6 +220,29 @@ class NormalizedArticle:
     def from_dict(cls, data: Dict[str, Any]) -> "NormalizedArticle":
         valid_fields = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
         return cls(**valid_fields)
+
+
+@dataclass
+class FactCheckClaimRecord:
+    """Canonical representation of an external ClaimReview evidence record."""
+
+    id: str
+    claim_text: str
+    claimant: Optional[str] = None
+    claim_date: Optional[str] = None
+    rating_text: Optional[str] = None
+    rating_standardized: Optional[str] = "unverified"
+    publisher_name: str = ""
+    publisher_site: Optional[str] = None
+    fact_check_url: str = ""
+    review_date: Optional[str] = None
+    language_code: Optional[str] = "en"
+    matched_article_id: Optional[str] = None
+    retrieved_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    raw_metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass

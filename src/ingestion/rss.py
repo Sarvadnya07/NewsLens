@@ -40,6 +40,40 @@ from src.models import NormalizedArticle, canonicalize_url
 
 logger = logging.getLogger(__name__)
 
+
+def extract_entry_image_url(entry: Any) -> Optional[str]:
+    """Extracts the first valid image URL from RSS entry enclosures or media tags."""
+    try:
+        enclosures = getattr(entry, "enclosures", []) or []
+        for enc in enclosures:
+            href = getattr(enc, "href", None) or (
+                enc.get("href") if isinstance(enc, dict) else None
+            )
+            typ = getattr(enc, "type", None) or (enc.get("type") if isinstance(enc, dict) else "")
+            if href and (
+                "image" in typ.lower()
+                or any(
+                    str(href).lower().endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")
+                )
+            ):
+                return str(href)
+        media_content = getattr(entry, "media_content", None) or []
+        if isinstance(media_content, list):
+            for m in media_content:
+                url = m.get("url") if isinstance(m, dict) else getattr(m, "url", None)
+                if url:
+                    return str(url)
+        media_thumbnail = getattr(entry, "media_thumbnail", None) or []
+        if isinstance(media_thumbnail, list) and media_thumbnail:
+            thumb = media_thumbnail[0]
+            url = thumb.get("url") if isinstance(thumb, dict) else getattr(thumb, "url", None)
+            if url:
+                return str(url)
+    except Exception:
+        pass
+    return None
+
+
 _USER_AGENT = "NewsLensIndia/0.1 (Python 3.12; Academic Research)"
 MAX_FEED_BYTES = 5 * 1024 * 1024  # 5 MiB maximum download size per feed
 FEED_TIMEOUT_SECONDS = 10
@@ -374,6 +408,7 @@ class RssIngestionService:
                         "source_name": source_name,
                         "feed_url": feed_url,
                         "domain": domain,
+                        "image_url": extract_entry_image_url(entry),
                     },
                 )
             )

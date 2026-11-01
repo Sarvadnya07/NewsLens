@@ -54,6 +54,8 @@ def list_articles(
             language=a.language or "en",
             country=a.country,
             query=a.query or "",
+            image_url=(a.raw_metadata or {}).get("image_url")
+            or (a.raw_metadata or {}).get("image"),
         )
         for a in res["articles"]
     ]
@@ -101,6 +103,8 @@ def get_article_detail(
             language=art.language or "en",
             country=art.country or "IN",
             query=art.query or "",
+            image_url=(art.raw_metadata or {}).get("image_url")
+            or (art.raw_metadata or {}).get("image"),
         )
     )
 

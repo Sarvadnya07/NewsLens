@@ -186,9 +186,41 @@ def _migration_002_add_discoveries_and_quotas(conn: sqlite3.Connection) -> None:
         """)
 
 
+def _migration_003_add_fact_check_claims(conn: sqlite3.Connection) -> None:
+    """Migration 003:
+    - Add 'fact_check_claims' table for storing ClaimReview evidence records independently of news articles.
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fact_check_claims (
+            id TEXT PRIMARY KEY,
+            claim_text TEXT NOT NULL,
+            claimant TEXT,
+            claim_date TEXT,
+            rating_text TEXT,
+            rating_standardized TEXT,
+            publisher_name TEXT NOT NULL,
+            publisher_site TEXT,
+            fact_check_url TEXT NOT NULL,
+            review_date TEXT,
+            language_code TEXT,
+            matched_article_id TEXT,
+            retrieved_at TEXT NOT NULL,
+            raw_metadata TEXT,
+            FOREIGN KEY(matched_article_id) REFERENCES articles(id) ON DELETE SET NULL
+        )
+    """)
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_fc_matched ON fact_check_claims(matched_article_id)"
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_fc_pub ON fact_check_claims(publisher_name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_fc_time ON fact_check_claims(retrieved_at)")
+
+
 MIGRATION_REGISTRY: List[Tuple[int, str, Callable[[sqlite3.Connection], None]]] = [
     (1, "001_add_origin_and_telemetry", _migration_001_add_origin_and_telemetry),
     (2, "002_add_discoveries_and_quotas", _migration_002_add_discoveries_and_quotas),
+    (3, "003_add_fact_check_claims", _migration_003_add_fact_check_claims),
 ]
 
 

@@ -16,6 +16,7 @@ class ArticleBase(BaseModel):
     language: Optional[str] = "en"
     country: Optional[str] = None
     query: Optional[str] = ""
+    image_url: Optional[str] = None
 
 
 class ArticleResponse(ArticleBase):

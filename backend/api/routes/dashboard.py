@@ -39,7 +39,8 @@ def get_dashboard_summary(service: NewsLensService = Depends(get_news_service)):
         sum(1 for st in source_statuses_raw if st.get("is_active", 1) == 1) or 7
     )
 
-    recent_raw = service.get_recent_articles(limit=10)
+    # Curate bounded Top 10 stories with deduplication and publisher diversity
+    recent_raw = service.get_top_dashboard_stories(limit=10)
     recent_articles = [
         ArticleResponse(
             id=a.id,
@@ -53,6 +54,8 @@ def get_dashboard_summary(service: NewsLensService = Depends(get_news_service)):
             language=a.language or "en",
             country=a.country or "IN",
             query=a.query or "",
+            image_url=(a.raw_metadata or {}).get("image_url")
+            or (a.raw_metadata or {}).get("image"),
         )
         for a in recent_raw
     ]
@@ -75,7 +78,9 @@ def get_dashboard_summary(service: NewsLensService = Depends(get_news_service)):
         total_configured_sources=total_configured_sources,
         coverage_clusters_count=coverage_clusters_count,
         fact_check_matches_count=fact_check_count,
-        recent_articles=recent_articles,
+        recent_articles=recent_articles[:10],
+        top_stories_limit=10,
+        top_stories_count=len(recent_articles[:10]),
         source_statuses=source_statuses,
         sources_distribution=sources_dist,
         publishers_distribution=publishers_dist,

@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { NewsMonitorPage } from './pages/NewsMonitorPage';
 import { AnalyzeArticlePage } from './pages/AnalyzeArticlePage';
 import { EvidenceCoveragePage } from './pages/EvidenceCoveragePage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
 import { MethodologyPage } from './pages/MethodologyPage';
 
 const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ export const App: React.FC = () => {
             <Route path="news" element={<NewsMonitorPage />} />
             <Route path="analyze" element={<AnalyzeArticlePage />} />
             <Route path="evidence" element={<EvidenceCoveragePage />} />
+            <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="methodology" element={<MethodologyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

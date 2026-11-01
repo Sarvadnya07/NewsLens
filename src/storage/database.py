@@ -198,9 +198,17 @@ class DatabaseManager:
                             "gdelt_doc_api"
                             if article.source_type == "gdelt"
                             else (
-                                str(article.raw_metadata.get("feed_id", "rss_syndicate"))
-                                if article.source_type == "rss"
-                                else "manual_submission"
+                                "currents"
+                                if article.source_type == "currents"
+                                else (
+                                    "guardian_open_platform"
+                                    if article.source_type == "guardian"
+                                    else (
+                                        str(article.raw_metadata.get("feed_id", "rss_syndicate"))
+                                        if article.source_type == "rss"
+                                        else "manual_submission"
+                                    )
+                                )
                             )
                         )
                     )
@@ -304,9 +312,19 @@ class DatabaseManager:
                                 "gdelt_doc_api"
                                 if article.source_type == "gdelt"
                                 else (
-                                    str(article.raw_metadata.get("feed_id", "rss_syndicate"))
-                                    if article.source_type == "rss"
-                                    else "manual_submission"
+                                    "currents"
+                                    if article.source_type == "currents"
+                                    else (
+                                        "guardian_open_platform"
+                                        if article.source_type == "guardian"
+                                        else (
+                                            str(
+                                                article.raw_metadata.get("feed_id", "rss_syndicate")
+                                            )
+                                            if article.source_type == "rss"
+                                            else "manual_submission"
+                                        )
+                                    )
                                 )
                             )
                         )

@@ -2,9 +2,10 @@
 
 import time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from backend.api.dependencies import get_news_service
+from backend.config import settings
 from backend.schemas.common import APIResponse
 from backend.schemas.ingestion import (
     IngestionRefreshRequest,
@@ -15,6 +16,21 @@ from src.ingestion.models import RefreshResult
 from src.services.news_service import NewsLensService
 
 router = APIRouter(prefix="/ingestion", tags=["Ingestion"])
+
+
+def _admin_gate(request: Request) -> bool:
+    """Delegates to the single centralized authorization policy in backend.main.
+
+    Imported lazily because ``backend.main`` includes this router, so a
+    module-level import would be circular.
+    """
+    from backend.main import verify_admin_access, verify_ingestion_access
+
+    if not bool(getattr(settings, "REQUIRE_ADMIN_AUTH_FOR_INGESTION", False)):
+        return True
+    if not bool(getattr(settings, "ALLOW_UNAUTHENTICATED_ADMIN_IN_DEV", True)):
+        return verify_admin_access(request)
+    return verify_ingestion_access(request)
 
 
 @router.get("/status", response_model=APIResponse[IngestionStatusResponse])
@@ -43,10 +59,22 @@ def get_ingestion_status(service: NewsLensService = Depends(get_news_service)):
 
 @router.post("/refresh", response_model=APIResponse[IngestionRefreshResponse])
 def trigger_refresh(
+    request: Request,
     payload: IngestionRefreshRequest = IngestionRefreshRequest(),
     service: NewsLensService = Depends(get_news_service),
+    _authorized: bool = Depends(_admin_gate),
 ):
-    """Executes live synchronization from verified Indian news feeds."""
+    """Executes live synchronization from verified Indian news feeds.
+
+    Triggers upstream provider requests, so it is gated by the administrative
+    policy whenever ``REQUIRE_ADMIN_AUTH_FOR_INGESTION`` is enabled and rate
+    limited once enforcement is on. See ``docs/API.md``.
+    """
+    if bool(getattr(settings, "REQUIRE_ADMIN_AUTH_FOR_INGESTION", False)):
+        from backend.main import enforce_rate_limit
+
+        enforce_rate_limit(request, scope="ingestion:refresh")
+
     start = time.perf_counter()
     req_type = (payload.source_type or "rss").strip().lower()
     profile_used = payload.profile or "india_publishers"

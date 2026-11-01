@@ -4,6 +4,25 @@ export interface APIResponse<T> {
   message?: string;
 }
 
+/** RFC 9457 Problem Details field-level failure. */
+export interface ProblemFieldError {
+  field: string;
+  message: string;
+  code?: string | null;
+}
+
+/** RFC 9457 Problem Details body returned for every API error. */
+export interface ProblemDetails {
+  type: string;
+  title: string;
+  status: number;
+  detail?: string | null;
+  instance?: string | null;
+  code: string;
+  request_id?: string | null;
+  errors?: ProblemFieldError[] | null;
+}
+
 export interface PaginationMeta {
   page: number;
   page_size: number;
@@ -29,6 +48,7 @@ export interface Article {
   country?: string;
   query?: string;
   discovery_profile?: string;
+  image_url?: string | null;
 }
 
 export interface IngestionQuotaTelemetry {
@@ -76,6 +96,8 @@ export interface DashboardSummary {
   coverage_clusters_count: number;
   fact_check_matches_count: number;
   recent_articles: Article[];
+  top_stories_limit?: number;
+  top_stories_count?: number;
   source_statuses: SourceStatusItem[];
   sources_distribution: Record<string, number>;
   publishers_distribution: Record<string, number>;
@@ -182,4 +204,68 @@ export interface MethodologyResponse {
   };
   limitations: SystemLimitation[];
   architecture_stack: Record<string, string>;
+}
+
+export interface ProviderStatusItem {
+  id: string;
+  name: string;
+  category: string;
+  source_type: string;
+  domain: string;
+  is_active: boolean;
+  requires_api_key: boolean;
+  env_key_name?: string | null;
+  is_configured: boolean;
+  is_enabled: boolean;
+  status_label: 'operational' | 'configured_not_tested' | 'not_configured' | 'disabled' | 'rate_limited' | 'provider_error' | 'retired' | 'backlog';
+  last_refresh_at?: string | null;
+  last_attempt_at?: string | null;
+  last_attempt_status?: string | null;
+  last_http_status?: number | null;
+  last_latency_ms?: number | null;
+  items_count: number;
+  new_items_inserted: number;
+  error_message?: string | null;
+  quota?: {
+    provider_id: string;
+    daily_limit?: number | null;
+    daily_consumed: number;
+    daily_remaining?: number | null;
+    rolling_15m_consumed: number;
+    is_exhausted?: boolean;
+    last_request_at?: string | null;
+    last_outcome?: string | null;
+  } | null;
+  supported_profiles: string[];
+  documentation_url?: string | null;
+  terms_url?: string | null;
+}
+
+export interface IntegrationsOverview {
+  total_registered: number;
+  configured_count: number;
+  operational_count: number;
+  disabled_count: number;
+  awaiting_credentials_count: number;
+  providers: ProviderStatusItem[];
+}
+
+export interface ConnectionTestResult {
+  provider_id: string;
+  success: boolean;
+  status: string;
+  message: string;
+  http_status?: number | null;
+  latency_ms?: number | null;
+}
+
+export interface IntegrationRefreshResult {
+  provider_id: string;
+  profile?: string | null;
+  success: boolean;
+  status: string;
+  items_fetched: number;
+  new_stored: number;
+  duration_ms: number;
+  error_message?: string | null;
 }

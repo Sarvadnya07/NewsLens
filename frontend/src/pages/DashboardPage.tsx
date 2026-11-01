@@ -8,6 +8,9 @@ import {
   Cpu,
   Activity,
   ArrowRight,
+  Sparkles,
+  Newspaper,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,6 +18,7 @@ export const DashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [quickText, setQuickText] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'gdelt' | 'rss' | 'newsdata'>('all');
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
@@ -24,6 +28,10 @@ export const DashboardPage: React.FC = () => {
   const screenMutation = useMutation({
     mutationFn: (text: string) => newsApi.analyzeArticle({ text }),
   });
+
+  const handleImageError = (articleId: string) => {
+    setFailedImages((prev) => ({ ...prev, [articleId]: true }));
+  };
 
   if (isLoading) {
     return (
@@ -52,9 +60,14 @@ export const DashboardPage: React.FC = () => {
     return true;
   });
 
+  // Strict hard limit enforcement: max 10 stories on Dashboard
+  const top10Articles = filteredArticles.slice(0, 10);
+  const featuredArticle = top10Articles.length > 0 ? top10Articles[0] : null;
+  const compactArticles = top10Articles.slice(1);
+
   return (
     <div className="space-y-8">
-      {/* Page Title & Context Header matching Stitch */}
+      {/* Page Title & Context Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -65,7 +78,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <h2 className="text-3xl font-bold font-serif text-[#183B56] tracking-tight">Overview</h2>
           <p className="text-xs text-[#64748B] mt-1 max-w-2xl">
-            Monitor recent coverage, screen news content, and examine available evidence across high-frequency syndicated wires and linguistic registers.
+            Finite, curated observatory displaying top verified intelligence. Capped strictly at a maximum of 10 stories with recency and publisher diversity guarantees.
           </p>
         </div>
 
@@ -143,114 +156,252 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Grid: Feed Triage (Left) & Right-Rail Widgets */}
+      {/* Main Grid: Editorial Top 10 Layout (Left) & Right-Rail Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Feed Triage */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
+        {/* Left Column: Top 10 Editorial Experience */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Header & Source Filter Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0] pb-3">
             <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 bg-[#183B56] text-white text-xs font-bold rounded flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                Curated Top Stories
+              </span>
+              <span className="text-xs text-[#64748B] font-medium bg-[#F1F5F9] px-2 py-1 rounded">
+                Showing {top10Articles.length} of {Math.min(10, summary.top_stories_limit || 10)} max
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors cursor-pointer ${
                   activeTab === 'all'
                     ? 'bg-[#183B56] text-white'
                     : 'text-[#64748B] hover:text-[#183B56] hover:bg-[#F1F5F9]'
                 }`}
               >
-                All Sources ({summary.recent_articles.length})
+                All Sources
               </button>
               <button
                 onClick={() => setActiveTab('gdelt')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors cursor-pointer ${
                   activeTab === 'gdelt'
                     ? 'bg-[#183B56] text-white'
                     : 'text-[#64748B] hover:text-[#183B56] hover:bg-[#F1F5F9]'
                 }`}
               >
-                GDELT Discovered
+                GDELT
               </button>
               <button
                 onClick={() => setActiveTab('rss')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors cursor-pointer ${
                   activeTab === 'rss'
                     ? 'bg-[#183B56] text-white'
                     : 'text-[#64748B] hover:text-[#183B56] hover:bg-[#F1F5F9]'
                 }`}
               >
-                Regional Feeds
+                RSS
               </button>
               <button
                 onClick={() => setActiveTab('newsdata')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors cursor-pointer ${
                   activeTab === 'newsdata'
                     ? 'bg-[#183B56] text-white'
                     : 'text-[#64748B] hover:text-[#183B56] hover:bg-[#F1F5F9]'
                 }`}
               >
-                NewsData.io
+                NewsData
               </button>
             </div>
-            <span className="text-[11px] text-[#94A3B8]">Sorted by Recency</span>
           </div>
 
-          {/* Article List */}
-          <div className="space-y-4">
-            {filteredArticles.map((article: Article) => (
-              <article
-                key={article.id}
-                className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all space-y-3"
-              >
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#F1F5F9] text-[#475569]">
-                      {article.source_type}
-                    </span>
-                    <span className="font-semibold text-[#183B56]">{article.publisher}</span>
-                    <span className="text-[#94A3B8]">• {new Date(article.published_at).toLocaleString()}</span>
+          {top10Articles.length === 0 ? (
+            <div className="p-10 bg-white border border-[#E2E8F0] rounded-lg text-center space-y-3">
+              <Newspaper className="w-10 h-10 text-[#94A3B8] mx-auto" />
+              <h3 className="font-serif font-bold text-lg text-[#183B56]">No Top Stories Available</h3>
+              <p className="text-xs text-[#64748B] max-w-sm mx-auto">
+                No articles found matching the current source filter. Try selecting 'All Sources' or refreshing ingestion.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* FEATURED STORY (1 Story with Prominent Layout) */}
+              {featuredArticle && (
+                <article
+                  data-testid="featured-story"
+                  className="bg-white rounded-lg border border-[#CBD5E1] shadow-sm hover:border-[#94A3B8] transition-all overflow-hidden"
+                >
+                  <div className="relative">
+                    {/* Featured Image or Styled Editorial Fallback */}
+                    {featuredArticle.image_url && !failedImages[featuredArticle.id] ? (
+                      <div className="relative h-64 sm:h-72 w-full bg-[#0F172A] overflow-hidden">
+                        <img
+                          src={featuredArticle.image_url}
+                          alt={featuredArticle.title}
+                          onError={() => handleImageError(featuredArticle.id)}
+                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute top-3 left-3 flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider shadow">
+                            ★ FEATURED LEAD STORY
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider">
+                            {featuredArticle.source_type}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-xs text-white/90">
+                          <span className="font-semibold">{featuredArticle.publisher}</span>
+                          <span className="text-[11px] text-white/70">
+                            {new Date(featuredArticle.published_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-44 sm:h-48 w-full bg-gradient-to-br from-[#183B56] via-[#1E4E79] to-[#0A192F] p-6 flex flex-col justify-between text-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider">
+                              ★ FEATURED LEAD STORY
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider">
+                              {featuredArticle.source_type}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-white/70 text-xs">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span>Editorial Archival View</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-white/80 border-t border-white/10 pt-2">
+                          <span className="font-bold tracking-wide text-amber-300">{featuredArticle.publisher}</span>
+                          <span className="text-[11px] text-white/70">
+                            {new Date(featuredArticle.published_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[11px] font-medium text-[#087F83] bg-[#E5F6F3] px-2 py-0.5 rounded">
-                    Indexed
-                  </span>
-                </div>
 
-                <h3 className="text-lg font-bold text-[#142B4A] font-serif leading-snug">
-                  {article.title}
-                </h3>
+                  {/* Featured Content Details */}
+                  <div className="p-5 sm:p-6 space-y-3">
+                    <h3 className="text-xl sm:text-2xl font-bold font-serif text-[#142B4A] leading-snug">
+                      {featuredArticle.title}
+                    </h3>
 
-                {article.summary && (
-                  <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2">
-                    {article.summary}
-                  </p>
-                )}
+                    {featuredArticle.summary && (
+                      <p className="text-sm text-[#475569] leading-relaxed line-clamp-3 font-normal">
+                        {featuredArticle.summary}
+                      </p>
+                    )}
 
-                <div className="flex items-center justify-between pt-2 border-t border-[#F1F5F9] text-xs">
-                  <div className="flex items-center gap-3">
-                    <Link
-                      to={`/evidence?article_id=${article.id}`}
-                      className="text-[#315FE8] hover:text-[#1E40AF] font-semibold flex items-center gap-1"
-                    >
-                      Examine Coverage <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                    <Link
-                      to={`/analyze?text=${encodeURIComponent(article.title)}`}
-                      className="text-[#64748B] hover:text-[#183B56] font-medium"
-                    >
-                      Screen in ML Analyzer
-                    </Link>
+                    <div className="flex flex-wrap items-center justify-between pt-4 border-t border-[#F1F5F9] gap-3 text-xs">
+                      <div className="flex items-center gap-4">
+                        <Link
+                          to={`/evidence?article_id=${featuredArticle.id}`}
+                          className="text-[#315FE8] hover:text-[#1E40AF] font-bold flex items-center gap-1"
+                        >
+                          Examine Coverage <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                        <Link
+                          to={`/analyze?text=${encodeURIComponent(featuredArticle.title)}`}
+                          className="text-[#64748B] hover:text-[#183B56] font-medium"
+                        >
+                          Screen in ML Analyzer
+                        </Link>
+                      </div>
+
+                      <a
+                        href={featuredArticle.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[#64748B] hover:text-[#183B56] font-semibold"
+                      >
+                        Read Source Article <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              )}
+
+              {/* COMPACT STORIES (Up to 9 stories in a responsive grid) */}
+              {compactArticles.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#64748B] uppercase tracking-wider px-1">
+                    <span>Selected Briefings ({compactArticles.length})</span>
+                    <span>Finite Curated Feed</span>
                   </div>
 
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-[#94A3B8] hover:text-[#475569]"
-                  >
-                    Source Link <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="compact-stories-grid">
+                    {compactArticles.map((article: Article) => (
+                      <article
+                        key={article.id}
+                        data-testid="compact-story-card"
+                        className="bg-white p-4 rounded-lg border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all flex flex-col justify-between space-y-3"
+                      >
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5 overflow-hidden">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#F1F5F9] text-[#475569] shrink-0">
+                                {article.source_type}
+                              </span>
+                              <span className="font-semibold text-[#183B56] truncate max-w-[140px]">
+                                {article.publisher}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-[#94A3B8] shrink-0">
+                              {new Date(article.published_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+
+                          {/* Thumbnail if available */}
+                          {article.image_url && !failedImages[article.id] && (
+                            <div className="w-full h-32 bg-[#F1F5F9] rounded overflow-hidden">
+                              <img
+                                src={article.image_url}
+                                alt={article.title}
+                                onError={() => handleImageError(article.id)}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+
+                          <h4 className="text-sm font-bold text-[#142B4A] font-serif leading-snug line-clamp-2">
+                            {article.title}
+                          </h4>
+
+                          {article.summary && (
+                            <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2">
+                              {article.summary}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-[#F8FAFC] text-xs">
+                          <Link
+                            to={`/evidence?article_id=${article.id}`}
+                            className="text-[#315FE8] hover:text-[#1E40AF] font-semibold text-[11px] flex items-center gap-0.5"
+                          >
+                            Examine <ArrowRight className="w-3 h-3" />
+                          </Link>
+
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[#94A3B8] hover:text-[#475569] text-[11px]"
+                          >
+                            Source <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              </article>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Quick Article Screening & Ingestion Health */}

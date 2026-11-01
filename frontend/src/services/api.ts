@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import type {
   APIResponse,
   PaginatedResponse,
@@ -10,6 +10,8 @@ import type {
   MethodologyResponse,
   IngestionRefreshParams,
   IngestionRefreshResponse,
+  ProblemDetails,
+  ProblemFieldError,
 } from '../types/api';
 
 const api = axios.create({
@@ -19,6 +21,69 @@ const api = axios.create({
   },
   timeout: 20000,
 });
+
+/**
+ * The API answers every failure with RFC 9457 Problem Details
+ * (`application/problem+json`). Parsing lives here so components never
+ * interpret error payloads themselves.
+ */
+export function parseProblem(payload: unknown): ProblemDetails | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const candidate = payload as Partial<ProblemDetails>;
+  if (typeof candidate.type !== 'string' || typeof candidate.code !== 'string') {
+    const legacyDetail = (payload as { detail?: unknown }).detail;
+    if (typeof legacyDetail === 'string') {
+      return {
+        type: 'urn:newslens:problem:unknown',
+        title: 'Request failed',
+        status: 0,
+        detail: legacyDetail,
+        code: 'UNKNOWN_ERROR',
+      };
+    }
+    return null;
+  }
+  return candidate as ProblemDetails;
+}
+
+export function getProblem(error: unknown): ProblemDetails | null {
+  const axiosError = error as AxiosError & { problem?: ProblemDetails | null };
+  if (axiosError?.problem) return axiosError.problem;
+  return parseProblem(axiosError?.response?.data);
+}
+
+export function getFieldErrors(error: unknown): ProblemFieldError[] {
+  return getProblem(error)?.errors ?? [];
+}
+
+/** Human readable message safe to render in the UI (never raw internals). */
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong.'): string {
+  const problem = getProblem(error);
+  if (problem) {
+    return problem.detail || problem.title || fallback;
+  }
+  const message = (error as { message?: string })?.message;
+  return message && message.length < 300 ? message : fallback;
+}
+
+export function getErrorCode(error: unknown): string | null {
+  return getProblem(error)?.code ?? null;
+}
+
+export function getRequestId(error: unknown): string | null {
+  return getProblem(error)?.request_id ?? null;
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    const problem = parseProblem(error?.response?.data);
+    if (problem) {
+      (error as AxiosError & { problem?: ProblemDetails }).problem = problem;
+    }
+    return Promise.reject(error);
+  },
+);
 
 export const newsApi = {
   // Health
@@ -96,3 +161,5 @@ export const newsApi = {
     return res.data.data;
   },
 };
+
+export default api;
