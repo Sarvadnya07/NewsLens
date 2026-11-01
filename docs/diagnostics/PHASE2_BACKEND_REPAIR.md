@@ -119,7 +119,7 @@ STATUS_NOT_ATTEMPTED = "not_attempted"
            "query": Optional[str],
            "source_type": Optional[str],
            "sort_order": str,
-       }
+       },
    }
    ```
 2. **Distinguishing Filters vs Defaults:**

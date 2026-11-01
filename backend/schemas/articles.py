@@ -14,7 +14,7 @@ class ArticleBase(BaseModel):
     source_type: str
     summary: Optional[str] = ""
     language: Optional[str] = "en"
-    country: Optional[str] = "IN"
+    country: Optional[str] = None
     query: Optional[str] = ""
 
 

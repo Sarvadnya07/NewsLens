@@ -8,6 +8,8 @@ import type {
   EvidenceSearchResponse,
   CoverageGraphResponse,
   MethodologyResponse,
+  IngestionRefreshParams,
+  IngestionRefreshResponse,
 } from '../types/api';
 
 const api = axios.create({
@@ -38,6 +40,7 @@ export const newsApi = {
     sort_order?: string;
     page?: number;
     page_size?: number;
+    discovery_profile?: string;
   }) => {
     const res = await api.get<APIResponse<PaginatedResponse<Article>>>('/articles', { params });
     return res.data.data;
@@ -77,8 +80,8 @@ export const newsApi = {
   },
 
   // Ingestion
-  triggerRefresh: async () => {
-    const res = await api.post<APIResponse<any>>('/ingestion/refresh');
+  triggerRefresh: async (params?: IngestionRefreshParams) => {
+    const res = await api.post<APIResponse<IngestionRefreshResponse>>('/ingestion/refresh', params || {});
     return res.data.data;
   },
 

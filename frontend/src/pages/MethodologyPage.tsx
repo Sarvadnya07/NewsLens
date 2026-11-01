@@ -129,8 +129,10 @@ export const MethodologyPage: React.FC = () => {
 
           <div className="flex flex-col items-center justify-center p-4">
             <div className="w-32 h-32 rounded-full border-12 border-[#183B56] border-t-[#087F83] border-r-[#27C6C1] flex flex-col items-center justify-center">
-              <span className="text-xl font-bold text-[#183B56] font-serif tabular-nums">4,200</span>
-              <span className="text-[10px] uppercase text-[#64748B]">Articles</span>
+              <span className="text-xl font-bold text-[#183B56] font-serif tabular-nums">
+                {methodology.dataset_split.total_articles.toLocaleString()}
+              </span>
+              <span className="text-[10px] uppercase text-[#64748B]">Samples</span>
             </div>
           </div>
 

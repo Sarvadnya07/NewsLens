@@ -12,6 +12,11 @@ import {
 export const EvidenceCoveragePage: React.FC = () => {
   const cyRef = useRef<HTMLDivElement>(null);
 
+  const { data: summary } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => newsApi.getDashboardSummary(),
+  });
+
   const { data: clustersData, isLoading: clustersLoading } = useQuery({
     queryKey: ['coverage', 'clusters'],
     queryFn: () => newsApi.getCoverageClusters(20),
@@ -173,7 +178,9 @@ export const EvidenceCoveragePage: React.FC = () => {
               </div>
               <div>
                 <span className="text-[#94A3B8] text-[10px] block">Datastore Records:</span>
-                <strong className="text-[#183B56]">824 Stored Articles</strong>
+                <strong className="text-[#183B56]">
+                  {summary ? `${summary.total_articles.toLocaleString()} Stored Articles` : 'Active Datastore'}
+                </strong>
               </div>
             </div>
 

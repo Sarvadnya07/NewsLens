@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend.schemas.articles import ArticleResponse
 
@@ -24,5 +24,11 @@ class DashboardSummary(BaseModel):
     fact_check_matches_count: int
     recent_articles: List[ArticleResponse]
     source_statuses: List[SourceStatusItem]
-    sources_distribution: Dict[str, int]
-    publishers_distribution: Dict[str, int]
+    sources_distribution: Dict[str, int] = Field(
+        ...,
+        description="Ingestion-origin distribution: counts of articles by source pipe (rss, gdelt, manual, unknown)",
+    )
+    publishers_distribution: Dict[str, int] = Field(
+        ...,
+        description="Publisher distribution: counts of articles by news publisher domain or outlet",
+    )

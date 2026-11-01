@@ -1,1 +1,0 @@
-"""NewsLens India UI Package."""

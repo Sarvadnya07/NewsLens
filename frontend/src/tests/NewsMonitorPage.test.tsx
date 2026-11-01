@@ -80,4 +80,70 @@ describe('NewsMonitorPage', () => {
       expect((input as HTMLInputElement).value).toBe('Cyclone');
     });
   });
+
+  it('triggers profile-specific ingestion sync and displays execution outcome', async () => {
+    vi.spyOn(newsApi, 'getArticles').mockResolvedValue({
+      items: [],
+      pagination: { page: 1, page_size: 10, total_items: 0, total_pages: 0 },
+    });
+    vi.spyOn(newsApi, 'getIngestionStatus').mockResolvedValue({
+      is_syncing: false,
+      last_sync_timestamp: '2026-11-01T12:00:00Z',
+      total_articles: 100,
+      source_statuses: [],
+      quota: {
+        provider_id: 'newsdata_io',
+        daily_requests_used: 5,
+        daily_requests_budget: 50,
+        rolling_15m_used: 1,
+        rolling_15m_budget: 10,
+        is_exhausted: false,
+      },
+    });
+    const triggerSpy = vi.spyOn(newsApi, 'triggerRefresh').mockResolvedValue({
+      success: true,
+      total_fetched: 10,
+      new_stored: 4,
+      duration_ms: 350,
+      all_succeeded: true,
+      all_failed: false,
+      summary: { 'NewsData.io': 'Status: success, Count: 10' },
+      discovery_profile: 'india_publishers',
+      quota_telemetry: {
+        provider_id: 'newsdata_io',
+        daily_requests_used: 6,
+        daily_requests_budget: 50,
+        rolling_15m_used: 2,
+        rolling_15m_budget: 10,
+        is_exhausted: false,
+      },
+    });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <NewsMonitorPage />
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Trigger Ingestion')).toBeDefined();
+    });
+
+    const triggerBtn = screen.getByText('Trigger Ingestion');
+    fireEvent.click(triggerBtn);
+
+    await waitFor(() => {
+      expect(triggerSpy).toHaveBeenCalledWith({
+        source_type: 'newsdata',
+        profile: 'india_publishers',
+        max_pages: 1,
+      });
+      expect(screen.getByText(/Execution Result:/i)).toBeDefined();
+      expect(screen.getByText(/Inserted/i)).toBeDefined();
+      expect(screen.getByText(/new articles/i)).toBeDefined();
+    });
+  });
 });

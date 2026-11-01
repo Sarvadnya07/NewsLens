@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { newsApi } from '../services/api';
-import type { Article } from '../types/api';
-import { Search, RotateCw, ExternalLink, Cpu } from 'lucide-react';
+import type { Article, IngestionRefreshParams, IngestionRefreshResponse } from '../types/api';
+import {
+  Search,
+  RotateCw,
+  ExternalLink,
+  Cpu,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Zap,
+} from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 export const NewsMonitorPage: React.FC = () => {
@@ -16,16 +25,83 @@ export const NewsMonitorPage: React.FC = () => {
 
   const [inputSearch, setInputSearch] = useState(query);
 
+  // Ingestion control state (independent from article filter state)
+  const [selectedIngestTarget, setSelectedIngestTarget] = useState<
+    'newsdata_india' | 'newsdata_global' | 'newsdata_intl_india' | 'rss' | 'gdelt' | 'all'
+  >('newsdata_india');
+  const [syncResult, setSyncResult] = useState<IngestionRefreshResponse | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Status & Quota Telemetry Query
+  const { data: statusData } = useQuery({
+    queryKey: ['ingestionStatus'],
+    queryFn: () => newsApi.getIngestionStatus(),
+    refetchInterval: 30000,
+  });
+
+  // Profile-specific Ingestion Mutation
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      setSyncError(null);
+      let payload: IngestionRefreshParams = { max_pages: 1 };
+      if (selectedIngestTarget === 'newsdata_india') {
+        payload = { source_type: 'newsdata', profile: 'india_publishers', max_pages: 1 };
+      } else if (selectedIngestTarget === 'newsdata_global') {
+        payload = { source_type: 'newsdata', profile: 'global_latest', max_pages: 1 };
+      } else if (selectedIngestTarget === 'newsdata_intl_india') {
+        payload = { source_type: 'newsdata', profile: 'india_global_coverage', max_pages: 1 };
+      } else if (selectedIngestTarget === 'rss') {
+        payload = { source_type: 'rss' };
+      } else if (selectedIngestTarget === 'gdelt') {
+        payload = { source_type: 'gdelt' };
+      } else if (selectedIngestTarget === 'all') {
+        payload = { source_type: 'all' };
+      }
+      return await newsApi.triggerRefresh(payload);
+    },
+    onSuccess: (res) => {
+      setSyncResult(res);
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['ingestionStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+    },
+    onError: (err: any) => {
+      setSyncError(err?.response?.data?.detail || err?.message || 'Sync failed.');
+    },
+  });
+
+  const getFilterParams = () => {
+    if (sourceType === 'newsdata_india') {
+      return { source_type: 'newsdata', discovery_profile: 'india_publishers' };
+    }
+    if (sourceType === 'newsdata_global') {
+      return { source_type: 'newsdata', discovery_profile: 'global_latest' };
+    }
+    if (sourceType === 'newsdata_intl_india') {
+      return { source_type: 'newsdata', discovery_profile: 'india_global_coverage' };
+    }
+    if (sourceType === 'newsdata') {
+      return { source_type: 'newsdata', discovery_profile: undefined };
+    }
+    return {
+      source_type: sourceType !== 'all' ? sourceType : undefined,
+      discovery_profile: undefined,
+    };
+  };
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['articles', { query, sourceType, sortOrder, page }],
-    queryFn: () =>
-      newsApi.getArticles({
+    queryFn: () => {
+      const filters = getFilterParams();
+      return newsApi.getArticles({
         query: query || undefined,
-        source_type: sourceType !== 'all' ? sourceType : undefined,
+        source_type: filters.source_type,
+        discovery_profile: filters.discovery_profile,
         sort_order: sortOrder,
         page,
         page_size: 10,
-      }),
+      });
+    },
   });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -48,6 +124,10 @@ export const NewsMonitorPage: React.FC = () => {
     next.set('page', '1');
     setSearchParams(next);
   };
+
+  const quota = statusData?.quota;
+  const isNewsDataTarget = selectedIngestTarget.startsWith('newsdata');
+  const newsDataDisabled = isNewsDataTarget && quota && quota.daily_requests_used === 0 && quota.last_outcome === null && !quota.last_request_at;
 
   return (
     <div className="space-y-6">
@@ -72,9 +152,157 @@ export const NewsMonitorPage: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-md text-xs font-semibold text-[#183B56] hover:bg-[#F8FAFC] shadow-xs cursor-pointer"
           >
             <RotateCw className="w-3.5 h-3.5" />
-            Refresh Feed
+            Refresh Feed View
           </button>
         </div>
+      </div>
+
+      {/* Upstream Ingestion & Quota Governance Trigger Panel */}
+      <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg p-4 space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[#315FE8]" />
+            <h3 className="text-xs font-bold text-[#183B56] uppercase tracking-wide">
+              Live Ingestion & Profile Synchronization
+            </h3>
+          </div>
+
+          {/* Last Sync Timestamp */}
+          <div className="flex items-center gap-1.5 text-[11px] text-[#64748B]">
+            <Clock className="w-3.5 h-3.5 text-[#94A3B8]" />
+            <span>
+              Last Sync:{' '}
+              {statusData?.last_sync_timestamp
+                ? new Date(statusData.last_sync_timestamp).toLocaleTimeString()
+                : 'Awaiting initial trigger'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+          <div className="flex-1">
+            <label className="block text-[11px] font-medium text-[#475569] mb-1">
+              Select Ingestion Channel / Discovery Profile:
+            </label>
+            <select
+              value={selectedIngestTarget}
+              onChange={(e) => {
+                setSelectedIngestTarget(e.target.value as any);
+                setSyncResult(null);
+                setSyncError(null);
+              }}
+              disabled={syncMutation.isPending}
+              className="w-full px-3 py-1.5 bg-white border border-[#CBD5E1] rounded text-xs text-[#183B56] focus:outline-none focus:border-[#315FE8]"
+            >
+              <option value="newsdata_india">NewsData.io — Indian Publishers (country='in')</option>
+              <option value="newsdata_global">NewsData.io — Global Latest (international)</option>
+              <option value="newsdata_intl_india">
+                NewsData.io — Intl Coverage on India (excludecountry='in', q='India')
+              </option>
+              <option value="rss">Curated Indian RSS Feeds (6 Newsrooms)</option>
+              <option value="gdelt">GDELT 2.0 DOC API (Global Monitored)</option>
+              <option value="all">All Channels (Parallel Sync)</option>
+            </select>
+          </div>
+
+          <div className="sm:self-end">
+            <button
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded text-xs font-semibold text-white transition-all shadow-xs cursor-pointer ${
+                syncMutation.isPending
+                  ? 'bg-[#94A3B8] cursor-not-allowed'
+                  : 'bg-[#315FE8] hover:bg-[#20496B]'
+              }`}
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+              {syncMutation.isPending ? 'Synchronizing...' : 'Trigger Ingestion'}
+            </button>
+          </div>
+        </div>
+
+        {/* Live Quota Governance Display for NewsData.io */}
+        {isNewsDataTarget && quota && (
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[#E2E8F0] text-[11px] text-[#475569]">
+            <span className="font-semibold text-[#183B56]">Quota Ledger:</span>
+            <span>
+              Daily Used:{' '}
+              <strong className={quota.daily_requests_used >= quota.daily_requests_budget ? 'text-red-600' : 'text-[#183B56]'}>
+                {quota.daily_requests_used} / {quota.daily_requests_budget}
+              </strong>
+            </span>
+            <span>•</span>
+            <span>
+              Rolling 15m:{' '}
+              <strong className={quota.rolling_15m_used >= quota.rolling_15m_budget ? 'text-red-600' : 'text-[#183B56]'}>
+                {quota.rolling_15m_used} / {quota.rolling_15m_budget}
+              </strong>
+            </span>
+            <span>•</span>
+            <span>
+              Remaining:{' '}
+              <strong className="text-[#087F83]">
+                {Math.max(0, quota.daily_requests_budget - quota.daily_requests_used)} requests
+              </strong>
+            </span>
+            {quota.is_exhausted && (
+              <span className="ml-auto inline-flex items-center gap-1 text-red-600 font-bold">
+                <AlertCircle className="w-3.5 h-3.5" /> Quota Exhausted
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Configuration Notice when NewsData.io Key is Unset */}
+        {newsDataDisabled && (
+          <div className="p-2 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-800 flex items-center gap-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+            <span>
+              <strong>Provider Key Pending:</strong> <code>NEWSDATA_API_KEY</code> is not yet configured. Live upstream calls will cleanly degrade to disabled status until an API key is provided.
+            </span>
+          </div>
+        )}
+
+        {/* Sync Execution Outcome Banner */}
+        {syncResult && (
+          <div
+            className={`p-2.5 rounded text-xs flex flex-col md:flex-row md:items-center justify-between gap-2 border ${
+              syncResult.success
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {syncResult.success ? (
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              )}
+              <span>
+                <strong>Execution Result:</strong> Profile{' '}
+                <code>{syncResult.discovery_profile || selectedIngestTarget}</code> executed in{' '}
+                {syncResult.duration_ms.toFixed(0)}ms • Fetched{' '}
+                <strong>{syncResult.total_fetched}</strong> items • Inserted{' '}
+                <strong>{syncResult.new_stored}</strong> new articles.
+              </span>
+            </div>
+
+            {syncResult.quota_telemetry && (
+              <span className="text-[11px] font-medium text-emerald-700 bg-white/60 px-2 py-0.5 rounded shrink-0">
+                Quota Left: {syncResult.quota_telemetry.daily_requests_budget - syncResult.quota_telemetry.daily_requests_used}
+              </span>
+            )}
+          </div>
+        )}
+
+        {syncError && (
+          <div className="p-2.5 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>
+              <strong>Ingestion Error:</strong> {syncError}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Multi-Axis Filter Toolbar */}
@@ -106,9 +334,13 @@ export const NewsMonitorPage: React.FC = () => {
               onChange={(e) => handleFilterChange('source', e.target.value)}
               className="px-2 py-1 bg-[#F8FAFC] border border-[#CBD5E1] rounded text-xs focus:outline-none"
             >
-              <option value="all">Source: All (GDELT + RSS)</option>
+              <option value="all">Source: All (GDELT + RSS + NewsData)</option>
               <option value="rss">Source: Syndicated RSS Only</option>
               <option value="gdelt">Source: GDELT v2 Discovered</option>
+              <option value="newsdata">Source: NewsData.io (All Profiles)</option>
+              <option value="newsdata_india">Source: NewsData.io (Indian Publishers)</option>
+              <option value="newsdata_global">Source: NewsData.io (Global Latest)</option>
+              <option value="newsdata_intl_india">Source: NewsData.io (Intl on India)</option>
               <option value="manual">Source: User Submitted</option>
             </select>
           </div>

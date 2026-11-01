@@ -114,12 +114,13 @@ class NormalizedArticle:
         str  # ISO formatted UTC or raw publication timestamp (empty string if unavailable)
     )
     ingested_at: str  # ISO timestamp (UTC) of when NewsLens fetched it
-    source_type: str  # 'gdelt', 'rss', or 'manual'
+    source_type: str  # 'gdelt', 'rss', 'newsdata', or 'manual'
     summary: Optional[str] = ""  # Optional article body snippet or description
     language: Optional[str] = "en"  # Language code
     country: Optional[str] = "IN"  # Country code
     query: Optional[str] = ""  # Search query used if any
     raw_metadata: Dict[str, Any] = field(default_factory=dict)
+    origin: str = "unknown"  # 'rss', 'gdelt', 'newsdata', 'manual', or 'unknown'
 
     def __post_init__(self):
         if self.url:
@@ -132,6 +133,18 @@ class NormalizedArticle:
             self.raw_metadata = metadata
         if not self.ingested_at:
             self.ingested_at = datetime.now(timezone.utc).isoformat()
+        if self.origin not in ("rss", "gdelt", "newsdata", "manual", "unknown"):
+            if self.source_type in ("rss", "gdelt", "newsdata", "manual"):
+                self.origin = self.source_type
+            else:
+                self.origin = "unknown"
+        elif self.origin == "unknown" and self.source_type in (
+            "rss",
+            "gdelt",
+            "newsdata",
+            "manual",
+        ):
+            self.origin = self.source_type
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

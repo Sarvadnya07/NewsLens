@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { newsApi } from '../services/api';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
@@ -18,6 +18,11 @@ export const AnalyzeArticlePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialText = searchParams.get('text') || '';
   const [textInput, setTextInput] = useState(initialText);
+
+  const { data: health } = useQuery({
+    queryKey: ['health-ready'],
+    queryFn: () => newsApi.getHealth(),
+  });
 
   const analysisMutation = useMutation({
     mutationFn: (text: string) => newsApi.analyzeArticle({ text }),
@@ -59,8 +64,12 @@ export const AnalyzeArticlePage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="px-3 py-1.5 bg-[#EAF0FF] border border-[#CBD5E1] rounded-md text-xs font-semibold text-[#315FE8] flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#315FE8]"></span>
-            Model v1.2-sample Ready (~140ms)
+            <span
+              className={`w-2 h-2 rounded-full ${
+                health?.ml_model === 'loaded' ? 'bg-[#10B981]' : 'bg-[#EF806B]'
+              }`}
+            ></span>
+            {health?.ml_model === 'loaded' ? 'ML Classifier Ready' : 'ML Model Loading / Offline'}
           </div>
         </div>
       </div>
@@ -136,7 +145,7 @@ export const AnalyzeArticlePage: React.FC = () => {
                 <Cpu className="w-5 h-5 text-[#315FE8]" />
                 <div>
                   <h3 className="font-bold text-base text-[#183B56] font-serif">Model Screening Result</h3>
-                  <p className="text-[10px] text-[#94A3B8]">NewsLens Baseline TF-IDF + Logistic Classifier (v1.2-sample)</p>
+                  <p className="text-[10px] text-[#94A3B8]">NewsLens Baseline TF-IDF + Logistic Classifier (LIAR Benchmark)</p>
                 </div>
               </div>
               <span className="text-[10px] px-2 py-0.5 bg-[#EAF0FF] text-[#315FE8] font-bold rounded">
@@ -318,7 +327,7 @@ export const AnalyzeArticlePage: React.FC = () => {
                 </span>
                 <ul className="list-disc list-inside text-[#475569] space-y-1 pl-1 text-[11px]">
                   <li>Official ministry press release exists denying any tariff change.</li>
-                  <li>Published fact-checks indexed from certified signatories (PIB / News Checker).</li>
+                  <li>Published fact-checks indexed from public fact-checking archives (PIB / News Checker).</li>
                 </ul>
               </div>
 

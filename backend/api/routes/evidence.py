@@ -19,7 +19,7 @@ def search_evidence(
     payload: EvidenceSearchRequest,
     service: NewsLensService = Depends(get_news_service),
 ):
-    """Retrieves accredited fact-check claims using BM25Plus ranking algorithm."""
+    """Retrieves archived fact-check claims using BM25Plus ranking algorithm."""
     raw_results = service.retrieve_fact_checks(query=payload.query, top_k=payload.top_k)
 
     items = []

@@ -1,12 +1,17 @@
 """Pydantic schemas for Ingestion operations and triggers."""
 
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 
 class IngestionRefreshRequest(BaseModel):
-    source_type: Optional[str] = Field("rss", pattern="^(rss|all)$")
+    source_type: Optional[str] = Field("rss", pattern="^(rss|gdelt|newsdata|all)$")
+    profile: Optional[str] = Field(
+        "india_publishers",
+        pattern="^(india_publishers|global_latest|india_global_coverage|all)$",
+    )
+    max_pages: Optional[int] = Field(1, ge=1, le=5)
 
 
 class IngestionStatusResponse(BaseModel):
@@ -14,6 +19,12 @@ class IngestionStatusResponse(BaseModel):
     last_sync_timestamp: Optional[str]
     total_articles: int
     source_statuses: list[dict]
+    quota: Optional[Dict[str, Any]] = None
+    supported_profiles: List[str] = [
+        "india_publishers",
+        "global_latest",
+        "india_global_coverage",
+    ]
 
 
 class IngestionRefreshResponse(BaseModel):
@@ -24,3 +35,5 @@ class IngestionRefreshResponse(BaseModel):
     all_succeeded: bool
     all_failed: bool
     summary: Dict[str, str]
+    discovery_profile: Optional[str] = None
+    quota_telemetry: Optional[Dict[str, Any]] = None

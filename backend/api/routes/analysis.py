@@ -52,7 +52,7 @@ def analyze_article_text(
     # 2. Related coverage retrieval
     related = service.find_related_news(text, top_n=4)
 
-    # 3. Accredited Fact-Check matching
+    # 3. Fact-Check archive matching
     fact_checks = service.retrieve_fact_checks(text, top_k=3)
 
     response = AnalysisResponse(

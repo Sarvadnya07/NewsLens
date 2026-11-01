@@ -35,6 +35,7 @@ from src.ingestion.models import (
     STATUS_TIMEOUT,
     ProviderFetchResult,
 )
+from src.ingestion.registry import get_active_rss_feeds
 from src.models import NormalizedArticle, canonicalize_url
 
 logger = logging.getLogger(__name__)
@@ -59,62 +60,18 @@ class MonitoredFeed:
     category: str = "National"
 
 
-# Curated Indian publisher RSS feeds (all verified returning HTTP 200)
+# Curated Indian publisher RSS feeds sourced directly from canonical PROVIDER_REGISTRY
 AUTHORITATIVE_FEEDS: List[MonitoredFeed] = [
     MonitoredFeed(
-        source_id="toi_national",
-        display_name="The Times of India (National)",
-        feed_url="https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms",
-        domain="timesofindia.indiatimes.com",
-        enabled=True,
-        language="en",
-        category="National",
-    ),
-    MonitoredFeed(
-        source_id="the_hindu_national",
-        display_name="The Hindu (National)",
-        feed_url="https://www.thehindu.com/news/national/feeder/default.rss",
-        domain="thehindu.com",
-        enabled=True,
-        language="en",
-        category="National",
-    ),
-    MonitoredFeed(
-        source_id="ndtv_india",
-        display_name="NDTV (India News)",
-        feed_url="https://feeds.feedburner.com/ndtvnews-india-news",
-        domain="ndtv.com",
-        enabled=True,
-        language="en",
-        category="National",
-    ),
-    MonitoredFeed(
-        source_id="indian_express_india",
-        display_name="Indian Express (India)",
-        feed_url="https://indianexpress.com/section/india/feed/",
-        domain="indianexpress.com",
-        enabled=True,
-        language="en",
-        category="National",
-    ),
-    MonitoredFeed(
-        source_id="hindustan_times_india",
-        display_name="Hindustan Times (India)",
-        feed_url="https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",
-        domain="hindustantimes.com",
-        enabled=True,
-        language="en",
-        category="National",
-    ),
-    MonitoredFeed(
-        source_id="livemint_economy",
-        display_name="Livemint (National & Economy)",
-        feed_url="https://www.livemint.com/rss/news",
-        domain="livemint.com",
-        enabled=True,
-        language="en",
-        category="Business",
-    ),
+        source_id=p.id,
+        display_name=p.name,
+        feed_url=p.endpoint_url,
+        domain=p.domain,
+        enabled=p.is_active,
+        language=p.language,
+        category=p.category,
+    )
+    for p in get_active_rss_feeds()
 ]
 
 # Backward-compatible dictionary mapping name -> url
@@ -243,6 +200,7 @@ class RssIngestionService:
                         items_count=0,
                         duration_ms=(time.perf_counter() - start_time) * 1000,
                         error_message="Feed rate-limited (HTTP 429).",
+                        http_status=429,
                     )
 
                 if resp.status_code != 200:
@@ -255,6 +213,7 @@ class RssIngestionService:
                         items_count=0,
                         duration_ms=(time.perf_counter() - start_time) * 1000,
                         error_message=f"Feed returned HTTP {resp.status_code}.",
+                        http_status=resp.status_code,
                     )
 
                 for chunk in resp.iter_content(chunk_size=32768):
@@ -428,6 +387,7 @@ class RssIngestionService:
             articles=articles,
             items_count=len(articles),
             duration_ms=duration_ms,
+            http_status=200,
         )
 
     def fetch_all(self) -> Dict[str, Any]:
@@ -448,6 +408,7 @@ class RssIngestionService:
                 "url": url,
                 "duration_ms": result.duration_ms,
                 "error": result.error_message,
+                "http_status": result.http_status,
             }
 
         return {

@@ -23,6 +23,7 @@ from src.ingestion.models import (
     STATUS_TIMEOUT,
     ProviderFetchResult,
 )
+from src.ingestion.registry import CANONICAL_GDELT_ID, CANONICAL_GDELT_NAME
 from src.models import NormalizedArticle, canonicalize_url
 
 logger = logging.getLogger(__name__)
@@ -92,8 +93,8 @@ class GdeltClient:
           - STATUS_INVALID_RESPONSE: Malformed JSON or non-JSON HTML returned.
         """
         start_time = time.perf_counter()
-        source_id = "gdelt_doc_api"
-        source_name = f"GDELT: {keyword.strip()}" if keyword else "GDELT Project v2"
+        source_id = CANONICAL_GDELT_ID
+        source_name = CANONICAL_GDELT_NAME
 
         if not keyword or not keyword.strip():
             return ProviderFetchResult(
@@ -215,6 +216,7 @@ class GdeltClient:
                 items_count=0,
                 duration_ms=duration_ms,
                 error_message="GDELT rate limit exceeded (HTTP 429).",
+                http_status=429,
             )
 
         if resp.status_code >= 500:
@@ -228,6 +230,7 @@ class GdeltClient:
                 items_count=0,
                 duration_ms=duration_ms,
                 error_message=f"GDELT server error (HTTP {resp.status_code}).",
+                http_status=resp.status_code,
             )
 
         if resp.status_code != 200:
@@ -241,6 +244,7 @@ class GdeltClient:
                 items_count=0,
                 duration_ms=duration_ms,
                 error_message=f"GDELT returned HTTP {resp.status_code}.",
+                http_status=resp.status_code,
             )
 
         content_type = (resp.headers.get("content-type") or "").lower()
@@ -361,4 +365,5 @@ class GdeltClient:
             articles=normalized,
             items_count=len(normalized),
             duration_ms=duration_ms,
+            http_status=200,
         )

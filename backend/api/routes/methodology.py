@@ -1,6 +1,7 @@
 """Methodology, evaluation metrics, and institutional blueprint API routes."""
 
 import json
+import logging
 import os
 
 from fastapi import APIRouter
@@ -14,6 +15,8 @@ from backend.schemas.methodology import (
     SystemLimitation,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/methodology", tags=["Methodology"])
 
 
@@ -26,8 +29,8 @@ def get_methodology():
         try:
             with open(metrics_path, "r", encoding="utf-8") as f:
                 real_metrics = json.load(f)
-        except Exception:
-            pass
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("Could not read evaluation metrics: %s", exc)
 
     acc = f"{real_metrics.get('accuracy', 0.6307) * 100:.1f}%"
     prec = f"{real_metrics.get('macro_precision', 0.6259) * 100:.1f}%"

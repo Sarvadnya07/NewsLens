@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 export const DashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [quickText, setQuickText] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'gdelt' | 'rss'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'gdelt' | 'rss' | 'newsdata'>('all');
 
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
@@ -48,6 +48,7 @@ export const DashboardPage: React.FC = () => {
   const filteredArticles = summary.recent_articles.filter((art: Article) => {
     if (activeTab === 'gdelt') return art.source_type.toLowerCase() === 'gdelt';
     if (activeTab === 'rss') return art.source_type.toLowerCase() === 'rss';
+    if (activeTab === 'newsdata') return art.source_type.toLowerCase() === 'newsdata';
     return true;
   });
 
@@ -93,7 +94,7 @@ export const DashboardPage: React.FC = () => {
             </span>
             <span className="text-xs text-[#10B981] font-semibold">Active</span>
           </div>
-          <p className="text-[11px] text-[#94A3B8] mt-2">Across GDELT & 8 RSS syndicated feeds</p>
+          <p className="text-[11px] text-[#94A3B8] mt-2">Across GDELT & configured RSS feeds</p>
         </div>
 
         {/* Metric 2 */}
@@ -136,9 +137,9 @@ export const DashboardPage: React.FC = () => {
             <span className="text-3xl font-bold text-[#142B4A] tabular-nums font-serif">
               {summary.fact_check_matches_count}
             </span>
-            <span className="text-xs text-[#64748B]">verified logs</span>
+            <span className="text-xs text-[#64748B]">archived claims</span>
           </div>
-          <p className="text-[11px] text-[#94A3B8] mt-2">BM25Plus accredited claim corpus</p>
+          <p className="text-[11px] text-[#94A3B8] mt-2">BM25Plus fact-check claim archive</p>
         </div>
       </div>
 
@@ -177,6 +178,16 @@ export const DashboardPage: React.FC = () => {
                 }`}
               >
                 Regional Feeds
+              </button>
+              <button
+                onClick={() => setActiveTab('newsdata')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'newsdata'
+                    ? 'bg-[#183B56] text-white'
+                    : 'text-[#64748B] hover:text-[#183B56] hover:bg-[#F1F5F9]'
+                }`}
+              >
+                NewsData.io
               </button>
             </div>
             <span className="text-[11px] text-[#94A3B8]">Sorted by Recency</span>
@@ -234,7 +245,7 @@ export const DashboardPage: React.FC = () => {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-[#94A3B8] hover:text-[#475569]"
                   >
-                    Original Wire <ExternalLink className="w-3 h-3" />
+                    Source Link <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               </article>

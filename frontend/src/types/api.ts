@@ -28,6 +28,36 @@ export interface Article {
   language?: string;
   country?: string;
   query?: string;
+  discovery_profile?: string;
+}
+
+export interface IngestionQuotaTelemetry {
+  provider_id: string;
+  daily_requests_used: number;
+  daily_requests_budget: number;
+  rolling_15m_used: number;
+  rolling_15m_budget: number;
+  is_exhausted: boolean;
+  last_request_at?: string | null;
+  last_outcome?: string | null;
+}
+
+export interface IngestionRefreshParams {
+  source_type?: string;
+  profile?: string;
+  max_pages?: number;
+}
+
+export interface IngestionRefreshResponse {
+  success: boolean;
+  total_fetched: number;
+  new_stored: number;
+  duration_ms: number;
+  all_succeeded: boolean;
+  all_failed: boolean;
+  summary: Record<string, string>;
+  discovery_profile?: string | null;
+  quota_telemetry?: IngestionQuotaTelemetry | null;
 }
 
 export interface SourceStatusItem {

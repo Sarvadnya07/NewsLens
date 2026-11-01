@@ -21,7 +21,10 @@ router = APIRouter(prefix="/articles", tags=["Articles"])
 @router.get("", response_model=APIResponse[PaginatedResponse[ArticleResponse]])
 def list_articles(
     query: Optional[str] = Query(None, description="Search term for headline"),
-    source_type: Optional[str] = Query(None, description="rss, gdelt, manual, or all"),
+    source_type: Optional[str] = Query(None, description="rss, gdelt, newsdata, manual, or all"),
+    discovery_profile: Optional[str] = Query(
+        None, description="india_publishers, global_latest, or india_global_coverage"
+    ),
     sort_order: str = Query("Recency", pattern="^(Recency|Oldest|Chronological)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -35,6 +38,7 @@ def list_articles(
         limit=page_size,
         offset=offset,
         sort_order=sort_order,
+        discovery_profile=discovery_profile,
     )
 
     articles = [
@@ -48,7 +52,7 @@ def list_articles(
             source_type=a.source_type,
             summary=a.summary or "",
             language=a.language or "en",
-            country=a.country or "IN",
+            country=a.country,
             query=a.query or "",
         )
         for a in res["articles"]
@@ -76,16 +80,8 @@ def get_article_detail(
     service: NewsLensService = Depends(get_news_service),
 ):
     """Fetches single article details by ID."""
-    # Target lookup query
-    with service.db._get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, title, url, publisher, published_at, ingested_at, source_type, summary, language, country, query FROM articles WHERE id = ?",
-            (article_id,),
-        )
-        row = cursor.fetchone()
-
-    if not row:
+    art = service.db.get_article_by_id(article_id)
+    if not art:
         raise NewsLensAPIException(
             code="ARTICLE_NOT_FOUND",
             message=f"Article with id '{article_id}' was not found.",
@@ -94,17 +90,17 @@ def get_article_detail(
 
     return APIResponse(
         data=ArticleDetailResponse(
-            id=row[0],
-            title=row[1],
-            url=row[2],
-            publisher=row[3],
-            published_at=row[4],
-            ingested_at=row[5],
-            source_type=row[6],
-            summary=row[7] or "",
-            language=row[8] or "en",
-            country=row[9] or "IN",
-            query=row[10] or "",
+            id=art.id,
+            title=art.title,
+            url=art.url,
+            publisher=art.publisher,
+            published_at=art.published_at,
+            ingested_at=art.ingested_at,
+            source_type=art.source_type,
+            summary=art.summary or "",
+            language=art.language or "en",
+            country=art.country or "IN",
+            query=art.query or "",
         )
     )
 

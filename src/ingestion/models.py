@@ -17,6 +17,7 @@ STATUS_PROVIDER_UNAVAILABLE = "provider_unavailable"
 STATUS_INVALID_RESPONSE = "invalid_response"
 STATUS_DISABLED = "disabled"
 STATUS_NOT_ATTEMPTED = "not_attempted"
+STATUS_QUOTA_EXCEEDED = "quota_exceeded"
 
 VALID_PROVIDER_STATUSES = frozenset(
     {
@@ -28,6 +29,7 @@ VALID_PROVIDER_STATUSES = frozenset(
         STATUS_INVALID_RESPONSE,
         STATUS_DISABLED,
         STATUS_NOT_ATTEMPTED,
+        STATUS_QUOTA_EXCEEDED,
     }
 )
 
@@ -128,6 +130,8 @@ class ProviderFetchResult:
     duration_ms: float = 0.0
     error_message: Optional[str] = None
     last_attempt_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    http_status: Optional[int] = None
+    new_items_inserted: int = 0
 
     def __post_init__(self):
         if self.articles and not self.items_count:
