@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from backend.config import sanitize_text, settings
+from src.config import sanitize_text, settings
 from src.models import FactCheckClaimRecord
 from src.storage.database import DatabaseManager
 
@@ -62,8 +62,8 @@ class GoogleFactCheckClient:
             }
 
         start = time.perf_counter()
-        params = {
-            "key": self.api_key.strip(),
+        params: Dict[str, Any] = {
+            "key": (self.api_key or "").strip(),
             "query": "India",
             "pageSize": 1,
         }
@@ -138,7 +138,7 @@ class GoogleFactCheckClient:
             return []
 
         params: Dict[str, Any] = {
-            "key": self.api_key.strip(),
+            "key": (self.api_key or "").strip(),
             "query": query.strip(),
             "pageSize": min(page_size, 20),
         }

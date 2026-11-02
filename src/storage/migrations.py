@@ -217,10 +217,25 @@ def _migration_003_add_fact_check_claims(conn: sqlite3.Connection) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_fc_time ON fact_check_claims(retrieved_at)")
 
 
+def _migration_004_add_effective_date_index(conn: sqlite3.Connection) -> None:
+    """Migration 004:
+    - Add an expression index matching the effective-date ordering used by every
+      article listing. Without it, ORDER BY falls back to a full scan plus a
+      temporary B-tree, which grows linearly with the article ledger.
+    """
+    cursor = conn.cursor()
+    if _table_exists(conn, "articles"):
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_articles_effective_date "
+            "ON articles(COALESCE(NULLIF(published_at, ''), ingested_at) DESC, id ASC)"
+        )
+
+
 MIGRATION_REGISTRY: List[Tuple[int, str, Callable[[sqlite3.Connection], None]]] = [
     (1, "001_add_origin_and_telemetry", _migration_001_add_origin_and_telemetry),
     (2, "002_add_discoveries_and_quotas", _migration_002_add_discoveries_and_quotas),
     (3, "003_add_fact_check_claims", _migration_003_add_fact_check_claims),
+    (4, "004_add_effective_date_index", _migration_004_add_effective_date_index),
 ]
 
 
@@ -245,16 +260,30 @@ def get_applied_migrations(conn: sqlite3.Connection) -> List[int]:
 
 
 def run_migrations(conn: sqlite3.Connection) -> List[int]:
-    """Runs all pending migrations in order inside individual transaction blocks.
+    """Runs all pending migrations in order under a single write lock.
+
+    Concurrent startups (several workers, or a restart overlapping another
+    process) must not both decide a migration is unapplied. ``BEGIN IMMEDIATE``
+    makes the applied-version read and the DDL one critical section, so a second
+    process waits, then observes the committed versions and skips them.
 
     Returns list of migration versions applied in this invocation.
     """
     init_migration_table(conn)
-    applied = set(get_applied_migrations(conn))
-    applied_now: List[int] = []
 
-    for version, name, migration_func in MIGRATION_REGISTRY:
-        if version not in applied:
+    # Release any implicitly opened transaction so the lock can be taken explicitly.
+    if conn.in_transaction:
+        conn.commit()
+
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        applied = set(get_applied_migrations(conn))
+        applied_now: List[int] = []
+
+        for version, name, migration_func in MIGRATION_REGISTRY:
+            if version in applied:
+                continue
+
             logger.info("Applying database migration %03d: %s", version, name)
             now_iso = datetime.now(timezone.utc).isoformat()
             cursor = conn.cursor()
@@ -273,4 +302,8 @@ def run_migrations(conn: sqlite3.Connection) -> List[int]:
                 logger.exception("Migration %03d (%s) failed and was rolled back", version, name)
                 raise
 
-    return applied_now
+        conn.commit()
+        return applied_now
+    except Exception:
+        conn.rollback()
+        raise

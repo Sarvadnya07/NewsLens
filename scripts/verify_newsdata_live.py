@@ -9,11 +9,24 @@ from __future__ import annotations
 import os
 import sys
 
+# Ensure UTF-8 output encoding on Windows consoles
+if sys.stdout.encoding != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 # Ensure repository root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+# Load local environment if present
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from src.ingestion.newsdata import (
     PROFILE_GLOBAL_LATEST,
+    PROFILE_INDIA_GLOBAL_COVERAGE,
     PROFILE_INDIA_PUBLISHERS,
     NewsDataClient,
 )
@@ -78,10 +91,20 @@ def main() -> int:
         print(f"   Sample Title  : {sample.title[:65]}...")
         print(f"   Publisher     : {sample.publisher} (Country: {sample.country})")
 
-    # 4. Check persistent quota
+    # 4. Test International Reporting on India profile
+    print("\n4. Testing 'india_global_coverage' Profile...")
+    res_ig = client.fetch_profile(PROFILE_INDIA_GLOBAL_COVERAGE, max_pages=1)
+    print(f"   Status        : {res_ig.status}")
+    print(f"   Items Fetched : {res_ig.items_count}")
+    if res_ig.articles:
+        sample = res_ig.articles[0]
+        print(f"   Sample Title  : {sample.title[:65]}...")
+        print(f"   Publisher     : {sample.publisher} (Country: {sample.country})")
+
+    # 5. Check persistent quota
     db = DatabaseManager()
     quota = db.get_provider_quota_telemetry(CANONICAL_NEWSDATA_ID)
-    print("\n4. Quota Governance Snapshot:")
+    print("\n5. Quota Governance Snapshot:")
     print(f"   Daily Used    : {quota['daily_requests_used']} / {quota['daily_requests_budget']}")
     print(f"   Rolling 15m   : {quota['rolling_15m_used']} / {quota['rolling_15m_budget']}")
     print(f"   Last Request  : {quota['last_request_at']}")

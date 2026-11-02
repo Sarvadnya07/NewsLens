@@ -71,24 +71,29 @@ class NewsLensService:
         stats: Dict[str, Dict[str, Any]] = result.get("stats", {})
         provider_results: Dict[str, ProviderFetchResult] = result.get("provider_results", {})
 
-        inserted_count = self.db.upsert_articles(articles)
-        if inserted_count > 0:
-            self.invalidate_clusters_cache()
-
-        # Update per-source status in SQLite with complete operational telemetry
+        # Articles and per-provider telemetry commit in ONE transaction, so a
+        # crash between the two cannot leave stored articles with stale health.
+        status_rows = []
         for name, info in stats.items():
             res_item = provider_results.get(name)
-            self.db.record_source_status(
-                source_name=name,
-                source_type="rss",
-                status=info.get("status", STATUS_PROVIDER_UNAVAILABLE),
-                items_fetched=info.get("count", 0),
-                error_message=info.get("error"),
-                http_status=info.get("http_status") or (res_item.http_status if res_item else None),
-                latency_ms=info.get("duration_ms") or (res_item.duration_ms if res_item else None),
-                new_items_inserted=0,
-                is_active=1,
+            status_rows.append(
+                {
+                    "source_name": name,
+                    "source_type": "rss",
+                    "status": info.get("status", STATUS_PROVIDER_UNAVAILABLE),
+                    "items_fetched": info.get("count", 0),
+                    "error_message": info.get("error"),
+                    "http_status": info.get("http_status")
+                    or (res_item.http_status if res_item else None),
+                    "latency_ms": info.get("duration_ms")
+                    or (res_item.duration_ms if res_item else None),
+                    "is_active": 1,
+                }
             )
+
+        inserted_count = self.db.upsert_articles(articles, status_rows=status_rows)
+        if inserted_count > 0:
+            self.invalidate_clusters_cache()
 
         duration_ms = (time.perf_counter() - start_time) * 1000
         all_succeeded = (
@@ -114,24 +119,24 @@ class NewsLensService:
     def refresh_gdelt(self, query: str = "India", max_records: int = 25) -> ProviderFetchResult:
         """Fetches latest articles from GDELT Doc API and updates canonical provider status."""
         result = self.gdelt.fetch_articles(keyword=query.strip(), max_records=max_records)
-        inserted = 0
-        if result.articles:
-            inserted = self.db.upsert_articles(result.articles)
-            if inserted > 0:
-                self.invalidate_clusters_cache()
-        result.new_items_inserted = inserted
-
-        self.db.record_source_status(
-            source_name=CANONICAL_GDELT_NAME,
-            source_type="gdelt",
-            status=result.status,
-            items_fetched=result.items_count,
-            error_message=result.error_message,
-            http_status=result.http_status,
-            latency_ms=result.duration_ms,
-            new_items_inserted=inserted,
-            is_active=1,
+        inserted = self.db.upsert_articles(
+            result.articles,
+            status_rows=[
+                {
+                    "source_name": CANONICAL_GDELT_NAME,
+                    "source_type": "gdelt",
+                    "status": result.status,
+                    "items_fetched": result.items_count,
+                    "error_message": result.error_message,
+                    "http_status": result.http_status,
+                    "latency_ms": result.duration_ms,
+                    "is_active": 1,
+                }
+            ],
         )
+        result.new_items_inserted = inserted
+        if inserted > 0:
+            self.invalidate_clusters_cache()
         return result
 
     def search_gdelt(self, query: str, max_records: int = 25) -> ProviderFetchResult:
@@ -170,24 +175,24 @@ class NewsLensService:
             category=category,
             max_pages=max_pages,
         )
-        inserted = 0
-        if result.articles:
-            inserted = self.db.upsert_articles(result.articles)
-            if inserted > 0:
-                self.invalidate_clusters_cache()
-        result.new_items_inserted = inserted
-
-        self.db.record_source_status(
-            source_name=CANONICAL_NEWSDATA_NAME,
-            source_type="newsdata",
-            status=result.status,
-            items_fetched=result.items_count,
-            error_message=result.error_message,
-            http_status=result.http_status,
-            latency_ms=result.duration_ms,
-            new_items_inserted=inserted,
-            is_active=1 if self.newsdata.is_configured else 0,
+        inserted = self.db.upsert_articles(
+            result.articles,
+            status_rows=[
+                {
+                    "source_name": CANONICAL_NEWSDATA_NAME,
+                    "source_type": "newsdata",
+                    "status": result.status,
+                    "items_fetched": result.items_count,
+                    "error_message": result.error_message,
+                    "http_status": result.http_status,
+                    "latency_ms": result.duration_ms,
+                    "is_active": 1 if self.newsdata.is_configured else 0,
+                }
+            ],
         )
+        result.new_items_inserted = inserted
+        if inserted > 0:
+            self.invalidate_clusters_cache()
         return result
 
     def get_newsdata_quota(self) -> Dict[str, Any]:
@@ -203,14 +208,27 @@ class NewsLensService:
         gdelt_query: str = "India",
         newsdata_query: Optional[str] = None,
     ) -> RefreshResult:
-        """Synchronously refreshes all configured Indian RSS feeds, GDELT 2.0 Doc API,
-        and NewsData.io (when configured or requested).
+        """Refreshes all configured Indian RSS feeds, GDELT 2.0 Doc API,
+        and NewsData.io (when configured) concurrently across worker threads.
 
         Combines per-provider results and reports honest aggregated status.
         """
         start_time = time.perf_counter()
-        rss_result = self.refresh_rss_feeds()
-        gdelt_result = self.refresh_gdelt(query=gdelt_query)
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            fut_rss = executor.submit(self.refresh_rss_feeds)
+            fut_gdelt = executor.submit(self.refresh_gdelt, query=gdelt_query)
+            fut_newsdata = (
+                executor.submit(self.refresh_newsdata, query=newsdata_query)
+                if self.newsdata.is_configured
+                else None
+            )
+
+            rss_result = fut_rss.result()
+            gdelt_result = fut_gdelt.result()
+            newsdata_result = fut_newsdata.result() if fut_newsdata else None
 
         combined_providers = dict(rss_result.provider_results)
         combined_providers[CANONICAL_GDELT_NAME] = gdelt_result
@@ -219,8 +237,7 @@ class NewsLensService:
         new_stored = rss_result.new_stored + gdelt_result.new_items_inserted
 
         # Include NewsData.io if API key is configured
-        if self.newsdata.is_configured:
-            newsdata_result = self.refresh_newsdata(query=newsdata_query)
+        if newsdata_result is not None:
             combined_providers[CANONICAL_NEWSDATA_NAME] = newsdata_result
             total_fetched += newsdata_result.items_count
             new_stored += newsdata_result.new_items_inserted

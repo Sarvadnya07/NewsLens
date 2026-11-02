@@ -1,10 +1,12 @@
 """Ingestion control and synchronization API routes."""
 
 import time
+from typing import Iterator
 
 from fastapi import APIRouter, Depends, Request
 
 from backend.api.dependencies import get_news_service
+from backend.api.errors import NewsLensAPIException
 from backend.config import settings
 from backend.schemas.common import APIResponse
 from backend.schemas.ingestion import (
@@ -33,6 +35,26 @@ def _admin_gate(request: Request) -> bool:
     return verify_ingestion_access(request)
 
 
+def _refresh_slot() -> Iterator[None]:
+    """Rejects a concurrent ingestion refresh instead of stacking provider fan-outs.
+
+    Imported lazily because ``backend.main`` includes this router.
+    """
+    from backend.main import refresh_coordinator
+
+    key = "ingestion:refresh"
+    if not refresh_coordinator.try_start(key):
+        raise NewsLensAPIException(
+            code="CONFLICT",
+            message="A refresh is already running. Wait for it to finish before retrying.",
+            status_code=409,
+        )
+    try:
+        yield
+    finally:
+        refresh_coordinator.finish(key)
+
+
 @router.get("/status", response_model=APIResponse[IngestionStatusResponse])
 def get_ingestion_status(service: NewsLensService = Depends(get_news_service)):
     """Returns current synchronization status, timestamps, and active feeds."""
@@ -41,7 +63,7 @@ def get_ingestion_status(service: NewsLensService = Depends(get_news_service)):
 
     last_sync = None
     if statuses:
-        dates = [s.get("last_refresh_at") for s in statuses if s.get("last_refresh_at")]
+        dates = [str(s["last_refresh_at"]) for s in statuses if s.get("last_refresh_at")]
         if dates:
             last_sync = max(dates)
 
@@ -60,9 +82,10 @@ def get_ingestion_status(service: NewsLensService = Depends(get_news_service)):
 @router.post("/refresh", response_model=APIResponse[IngestionRefreshResponse])
 def trigger_refresh(
     request: Request,
-    payload: IngestionRefreshRequest = IngestionRefreshRequest(),
+    payload: IngestionRefreshRequest = IngestionRefreshRequest.model_validate({}),
     service: NewsLensService = Depends(get_news_service),
     _authorized: bool = Depends(_admin_gate),
+    _slot: None = Depends(_refresh_slot),
 ):
     """Executes live synchronization from verified Indian news feeds.
 

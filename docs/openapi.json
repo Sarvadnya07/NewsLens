@@ -169,36 +169,6 @@
         "title": "APIResponse[DashboardSummary]",
         "type": "object"
       },
-      "APIResponse_Dict_str__Any__": {
-        "properties": {
-          "data": {
-            "additionalProperties": true,
-            "title": "Data",
-            "type": "object"
-          },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Message"
-          },
-          "success": {
-            "default": true,
-            "title": "Success",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "title": "APIResponse[Dict[str, Any]]",
-        "type": "object"
-      },
       "APIResponse_EvidenceSearchResponse_": {
         "properties": {
           "data": {
@@ -459,6 +429,34 @@
         "title": "APIResponse[PaginatedResponse[ArticleResponse]]",
         "type": "object"
       },
+      "APIResponse_ProviderQuotaTelemetry_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProviderQuotaTelemetry"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "success": {
+            "default": true,
+            "title": "Success",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "APIResponse[ProviderQuotaTelemetry]",
+        "type": "object"
+      },
       "APIResponse_ProviderStatusItem_": {
         "properties": {
           "data": {
@@ -551,6 +549,16 @@
             "title": "Analysis Timestamp",
             "type": "string"
           },
+          "evidence_assessment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceAssessment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "fact_check_matches": {
             "default": [],
             "items": {
@@ -567,8 +575,7 @@
           "related_coverage": {
             "default": [],
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/RelatedCoverageItem"
             },
             "title": "Related Coverage",
             "type": "array"
@@ -787,8 +794,52 @@
         "title": "ArticleResponse",
         "type": "object"
       },
+      "ConnectionState": {
+        "description": "Outcome of a single bounded connectivity test.\n\n``connected`` is only returned when the provider actually answered; a\nconfigured API key alone is never reported as connectivity.",
+        "enum": [
+          "connected",
+          "not_configured",
+          "not_implemented",
+          "auth_failed",
+          "rate_limited",
+          "timeout",
+          "unavailable",
+          "invalid_response",
+          "error"
+        ],
+        "title": "ConnectionState",
+        "type": "string"
+      },
       "ConnectionTestResult": {
+        "description": "Normalized result of ``POST /integrations/{provider_id}/test``.\n\nEvery provider answers with this exact structure. Optional measurements stay\nnull when no request could be made; they are never synthesized.",
         "properties": {
+          "checked_at": {
+            "description": "ISO-8601 UTC timestamp of this test",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "configured": {
+            "description": "Required credentials are present",
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "connected": {
+            "description": "True only when the upstream answered",
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Failure summary; null when connected",
+            "title": "Error"
+          },
           "http_status": {
             "anyOf": [
               {
@@ -798,7 +849,13 @@
                 "type": "null"
               }
             ],
+            "description": "Upstream status, when a call was made",
             "title": "Http Status"
+          },
+          "implemented": {
+            "description": "An adapter exists for this provider",
+            "title": "Implemented",
+            "type": "boolean"
           },
           "latency_ms": {
             "anyOf": [
@@ -809,9 +866,12 @@
                 "type": "null"
               }
             ],
+            "description": "Measured round trip, when available",
             "title": "Latency Ms"
           },
           "message": {
+            "default": "",
+            "description": "Safe, human readable summary",
             "title": "Message",
             "type": "string"
           },
@@ -819,20 +879,36 @@
             "title": "Provider Id",
             "type": "string"
           },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Correlation id for this request",
+            "title": "Request Id"
+          },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "$ref": "#/components/schemas/ConnectionState",
+            "description": "Canonical outcome of the test"
           },
           "success": {
+            "description": "Alias of ``connected`` for legacy consumers",
             "title": "Success",
             "type": "boolean"
           }
         },
         "required": [
           "provider_id",
-          "success",
           "status",
-          "message"
+          "connected",
+          "configured",
+          "implemented",
+          "success",
+          "checked_at"
         ],
         "title": "ConnectionTestResult",
         "type": "object"
@@ -986,6 +1062,33 @@
           "publishers_distribution"
         ],
         "title": "DashboardSummary",
+        "type": "object"
+      },
+      "EvidenceAssessment": {
+        "properties": {
+          "analytical_recommendations": {
+            "default": "",
+            "title": "Analytical Recommendations",
+            "type": "string"
+          },
+          "available_evidence": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Available Evidence",
+            "type": "array"
+          },
+          "missing_evidence": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Evidence",
+            "type": "array"
+          }
+        },
+        "title": "EvidenceAssessment",
         "type": "object"
       },
       "EvidenceSearchRequest": {
@@ -1386,10 +1489,13 @@
         "type": "object"
       },
       "IntegrationRefreshRequest": {
+        "description": "Optional scoping for an on-demand provider refresh.",
         "properties": {
           "max_pages": {
             "anyOf": [
               {
+                "maximum": 10.0,
+                "minimum": 1.0,
                 "type": "integer"
               },
               {
@@ -1426,8 +1532,10 @@
         "type": "object"
       },
       "IntegrationRefreshResult": {
+        "description": "Result of ``POST /integrations/{provider_id}/refresh``.\n\n``status`` uses the ingestion provider-status vocabulary\n(``success``, ``no_results``, ``disabled``, ``rate_limited``,\n``provider_unavailable``, ``timeout``, ``invalid_response``,\n``not_implemented``).",
         "properties": {
           "duration_ms": {
+            "default": 0.0,
             "title": "Duration Ms",
             "type": "number"
           },
@@ -1443,10 +1551,12 @@
             "title": "Error Message"
           },
           "items_fetched": {
+            "default": 0,
             "title": "Items Fetched",
             "type": "integer"
           },
           "new_stored": {
+            "default": 0,
             "title": "New Stored",
             "type": "integer"
           },
@@ -1477,15 +1587,29 @@
         "required": [
           "provider_id",
           "success",
-          "status",
-          "items_fetched",
-          "new_stored",
-          "duration_ms"
+          "status"
         ],
         "title": "IntegrationRefreshResult",
         "type": "object"
       },
+      "IntegrationStatus": {
+        "description": "Canonical provider state exposed to consumers.\n\n* ``operational`` - a successful attempt was recorded inside the staleness window.\n* ``degraded`` - the last recorded attempt succeeded but is older than the\n  staleness window, so it no longer proves current health.\n* ``configured_not_tested`` - credentials or configuration exist, but no\n  successful attempt has been recorded.\n* ``not_configured`` - the provider requires credentials that are absent.\n* ``disabled`` - explicitly disabled in configuration.\n* ``rate_limited`` - the last attempt was rejected by an upstream quota.\n* ``provider_error`` - the last attempt failed (timeout, 5xx, bad payload).\n* ``backlog`` - registered for planning; no adapter is active.\n* ``retired`` - withdrawn; excluded from normal ingestion.",
+        "enum": [
+          "operational",
+          "degraded",
+          "configured_not_tested",
+          "not_configured",
+          "disabled",
+          "rate_limited",
+          "provider_error",
+          "backlog",
+          "retired"
+        ],
+        "title": "IntegrationStatus",
+        "type": "string"
+      },
       "IntegrationsOverview": {
+        "description": "Registry-wide aggregates for the Integrations page.",
         "properties": {
           "awaiting_credentials_count": {
             "title": "Awaiting Credentials Count",
@@ -1964,7 +2088,166 @@
         "title": "ProblemFieldError",
         "type": "object"
       },
+      "ProviderQuotaTelemetry": {
+        "description": "NewsLens request-budget telemetry for one provider.\n\nThis is internal governance (how much of our own configured request budget\nhas been spent), not a provider-reported subscription quota. When a provider\nhas no managed budget, every measurement is null and ``quota_supported`` is\nfalse; values are never fabricated.",
+        "properties": {
+          "is_exhausted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "True when either budget is spent",
+            "title": "Is Exhausted"
+          },
+          "last_outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Outcome of the last request",
+            "title": "Last Outcome"
+          },
+          "last_request_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp of the last request",
+            "title": "Last Request At"
+          },
+          "last_updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When these counters were read",
+            "title": "Last Updated At"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Daily request budget, when managed",
+            "title": "Limit"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "quota_supported": {
+            "default": false,
+            "description": "False when NewsLens keeps no request budget for this provider",
+            "title": "Quota Supported",
+            "type": "boolean"
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Remaining daily requests, when managed",
+            "title": "Remaining"
+          },
+          "reset_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Window reset timestamp, when known",
+            "title": "Reset At"
+          },
+          "rolling_15m_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "15-minute burst budget",
+            "title": "Rolling 15M Limit"
+          },
+          "rolling_15m_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Requests in the 15-minute window",
+            "title": "Rolling 15M Used"
+          },
+          "source": {
+            "default": "newslens_request_budget",
+            "description": "Where the numbers come from (internal governance, not the provider)",
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "default": "requests",
+            "description": "Unit counted by limit/used",
+            "title": "Unit",
+            "type": "string"
+          },
+          "used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Requests consumed in the current day window",
+            "title": "Used"
+          },
+          "window": {
+            "default": "daily",
+            "description": "Budget window the limit applies to",
+            "title": "Window",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id"
+        ],
+        "title": "ProviderQuotaTelemetry",
+        "type": "object"
+      },
       "ProviderStatusItem": {
+        "description": "Public status DTO for one registered provider.",
         "properties": {
           "category": {
             "title": "Category",
@@ -2016,10 +2299,12 @@
             "type": "boolean"
           },
           "is_configured": {
+            "description": "Required credentials are present",
             "title": "Is Configured",
             "type": "boolean"
           },
           "is_enabled": {
+            "description": "Provider is enabled in configuration",
             "title": "Is Enabled",
             "type": "boolean"
           },
@@ -2095,14 +2380,12 @@
           "quota": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/ProviderQuotaTelemetry"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Quota"
+            ]
           },
           "requires_api_key": {
             "title": "Requires Api Key",
@@ -2113,8 +2396,8 @@
             "type": "string"
           },
           "status_label": {
-            "title": "Status Label",
-            "type": "string"
+            "$ref": "#/components/schemas/IntegrationStatus",
+            "description": "Truthful provider maturity state"
           },
           "supported_profiles": {
             "items": {
@@ -2170,6 +2453,55 @@
           "relationship"
         ],
         "title": "RelatedArticleItem",
+        "type": "object"
+      },
+      "RelatedCoverageItem": {
+        "properties": {
+          "is_syndication": {
+            "default": false,
+            "title": "Is Syndication",
+            "type": "boolean"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "publisher": {
+            "title": "Publisher",
+            "type": "string"
+          },
+          "relationship": {
+            "title": "Relationship",
+            "type": "string"
+          },
+          "similarity": {
+            "title": "Similarity",
+            "type": "number"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "publisher",
+          "url",
+          "similarity",
+          "relationship"
+        ],
+        "title": "RelatedCoverageItem",
         "type": "object"
       },
       "SourceStatusItem": {
@@ -2507,11 +2839,14 @@
             }
           },
           {
+            "description": "Page number; bounded so offsets stay representable",
             "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "default": 1,
+              "description": "Page number; bounded so offsets stay representable",
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
@@ -3561,7 +3896,7 @@
     },
     "/api/v1/health/ready": {
       "get": {
-        "description": "Readiness probe verifying database and ML model readiness.",
+        "description": "Readiness probe: can this instance safely serve traffic?\n\nReadiness gates only on the dependencies without which core operations are\nbroken (datastore reachable, screening model loaded) and answers ``503`` when\neither is unavailable, so an orchestrator can actually take the instance out\nof rotation. The fact-check index is reported but not gating: evidence search\ndegrades to an empty result set rather than failing every request.",
         "operationId": "readiness_check_api_v1_health_ready_get",
         "responses": {
           "200": {
@@ -4318,7 +4653,7 @@
     },
     "/api/v1/integrations/{provider_id}/quota": {
       "get": {
-        "description": "Returns detailed quota ledger metrics for the specified provider.",
+        "description": "Returns request-budget telemetry for the specified provider.\n\nNewsLens budgets are internal governance counters, not provider-reported\nsubscription quotas. Providers without a managed budget answer with\n``quota_supported: false`` and null measurements rather than invented zeros.",
         "operationId": "get_provider_quota_endpoint_api_v1_integrations__provider_id__quota_get",
         "parameters": [
           {
@@ -4336,7 +4671,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIResponse_Dict_str__Any__"
+                  "$ref": "#/components/schemas/APIResponse_ProviderQuotaTelemetry_"
                 }
               }
             },
@@ -4451,7 +4786,7 @@
     },
     "/api/v1/integrations/{provider_id}/refresh": {
       "post": {
-        "description": "Triggers an on-demand ingestion cycle for the specific provider.\n\nRequires administrative authorization in production mode.",
+        "description": "Triggers an on-demand ingestion cycle for the specific provider.\n\nRequires administrative authorization and consumes one unit of the\nprovider-diagnostics rate-limit budget.",
         "operationId": "refresh_provider_endpoint_api_v1_integrations__provider_id__refresh_post",
         "parameters": [
           {
@@ -4461,22 +4796,6 @@
             "schema": {
               "title": "Provider Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Admin-Key",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Admin-Key"
             }
           }
         ],
@@ -4612,7 +4931,7 @@
     },
     "/api/v1/integrations/{provider_id}/test": {
       "post": {
-        "description": "Executes a safe, minimal connection test for the provider.\n\nRequires administrative authorization in production mode.",
+        "description": "Executes a safe, bounded connection test for the provider.\n\nNo articles are ingested. Requires administrative authorization and consumes\none unit of the provider-diagnostics rate-limit budget.",
         "operationId": "test_provider_api_v1_integrations__provider_id__test_post",
         "parameters": [
           {
@@ -4622,22 +4941,6 @@
             "schema": {
               "title": "Provider Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Admin-Key",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Admin-Key"
             }
           }
         ],

@@ -35,9 +35,8 @@ def get_dashboard_summary(service: NewsLensService = Depends(get_news_service)):
         for st in source_statuses_raw
         if st.get("status") == "success" and st.get("is_active", 1) == 1
     )
-    total_configured_sources = (
-        sum(1 for st in source_statuses_raw if st.get("is_active", 1) == 1) or 7
-    )
+    # Never fabricate a count: an empty registry reports zero active sources.
+    total_configured_sources = sum(1 for st in source_statuses_raw if st.get("is_active", 1) == 1)
 
     # Curate bounded Top 10 stories with deduplication and publisher diversity
     recent_raw = service.get_top_dashboard_stories(limit=10)

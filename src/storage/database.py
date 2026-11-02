@@ -67,8 +67,18 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path, timeout=5.0)
         conn.row_factory = sqlite3.Row
         try:
-            conn.execute("PRAGMA journal_mode=WAL")
+            # Order matters: busy_timeout must be set before any statement that can
+            # contend for a write lock.
             conn.execute("PRAGMA busy_timeout=5000")
+            # Declared cascades/links are inert unless enforcement is enabled
+            # per connection; SQLite defaults to OFF.
+            conn.execute("PRAGMA foreign_keys=ON")
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+            except sqlite3.OperationalError:
+                # A concurrent connection can briefly hold the lock. WAL is a
+                # persistent database property, so a failure here is not fatal.
+                pass
             yield conn
             conn.commit()
         except Exception:
@@ -133,6 +143,16 @@ class DatabaseManager:
             conn.commit()
             # Execute versioned additive migrations
             run_migrations(conn)
+
+    def ping(self) -> bool:
+        """Cheap datastore liveness probe used by the readiness check."""
+        try:
+            with self._connect() as conn:
+                conn.execute("SELECT 1").fetchone()
+            return True
+        except sqlite3.Error as exc:
+            logger.warning("Database readiness probe failed: %s", exc)
+            return False
 
     def upsert_article(self, article: NormalizedArticle) -> bool:
         """Inserts or updates a normalized article.
@@ -243,12 +263,24 @@ class DatabaseManager:
 
         return False
 
-    def upsert_articles(self, articles: List[NormalizedArticle]) -> int:
+    def upsert_articles(
+        self,
+        articles: List[NormalizedArticle],
+        status_rows: Optional[List[Dict[str, Any]]] = None,
+    ) -> int:
         """Batch upserts normalized articles inside a single transaction.
 
-        Returns the count of newly inserted articles (ignoring updates).
+        Args:
+            articles: Normalized articles to insert or update.
+            status_rows: Optional provider telemetry rows written in the SAME
+                transaction, so a crash cannot leave stored articles with a
+                stale health snapshot. A row that omits ``new_items_inserted``
+                receives this batch's inserted count.
+
+        Returns:
+            The count of newly inserted articles (ignoring updates).
         """
-        if not articles:
+        if not articles and not status_rows:
             return 0
 
         inserted_count = 0
@@ -350,6 +382,10 @@ class DatabaseManager:
                         )
                         if not exists:
                             inserted_count += 1
+                    for status_row in status_rows or ():
+                        payload = dict(status_row)
+                        payload.setdefault("new_items_inserted", inserted_count)
+                        self._write_source_status(cursor, **payload)
                     conn.commit()
                 return inserted_count
             except sqlite3.OperationalError as e:
@@ -560,6 +596,69 @@ class DatabaseManager:
                 origin=r["origin"] if "origin" in r.keys() and r["origin"] else "ingested",
             )
 
+    def _write_source_status(
+        self,
+        cursor: sqlite3.Cursor,
+        *,
+        source_name: str,
+        source_type: str,
+        status: str,
+        items_fetched: int = 0,
+        error_message: Optional[str] = None,
+        http_status: Optional[int] = None,
+        latency_ms: Optional[float] = None,
+        new_items_inserted: int = 0,
+        is_active: Optional[int] = None,
+    ) -> None:
+        """Writes one source_status row inside the caller's transaction.
+
+        Kept private so article writes and their telemetry can commit atomically.
+        """
+        now = datetime.now(timezone.utc).isoformat()
+        clean_status = status if status in VALID_PROVIDER_STATUSES else "provider_unavailable"
+        last_successful = now if clean_status == "success" else None
+
+        # Retired sources remain inactive
+        active_val = 0 if "Deccan" in source_name else (1 if is_active is None else int(is_active))
+
+        cursor.execute(
+            """
+            INSERT INTO source_status (
+                source_name, source_type, last_refresh_at, status, items_fetched, error_message,
+                last_attempt_at, last_attempt_status, last_successful_refresh_at,
+                last_http_status, last_latency_ms, new_items_inserted, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(source_name) DO UPDATE SET
+                source_type=excluded.source_type,
+                last_refresh_at=excluded.last_refresh_at,
+                status=excluded.status,
+                items_fetched=excluded.items_fetched,
+                error_message=excluded.error_message,
+                last_attempt_at=excluded.last_attempt_at,
+                last_attempt_status=excluded.last_attempt_status,
+                last_successful_refresh_at=COALESCE(excluded.last_successful_refresh_at, source_status.last_successful_refresh_at),
+                last_http_status=excluded.last_http_status,
+                last_latency_ms=excluded.last_latency_ms,
+                new_items_inserted=excluded.new_items_inserted,
+                is_active=excluded.is_active
+            """,
+            (
+                source_name,
+                source_type,
+                now,
+                clean_status,
+                items_fetched,
+                error_message,
+                now,
+                clean_status,
+                last_successful,
+                http_status,
+                latency_ms,
+                new_items_inserted,
+                active_val,
+            ),
+        )
+
     def record_source_status(
         self,
         source_name: str,
@@ -576,51 +675,18 @@ class DatabaseManager:
 
         Preserves existing last_successful_refresh_at if current attempt did not succeed.
         """
-        now = datetime.now(timezone.utc).isoformat()
-        clean_status = status if status in VALID_PROVIDER_STATUSES else "provider_unavailable"
-        last_successful = now if clean_status == "success" else None
-
-        # Retired sources remain inactive
-        active_val = 0 if "Deccan" in source_name else (1 if is_active is None else int(is_active))
-
         with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO source_status (
-                    source_name, source_type, last_refresh_at, status, items_fetched, error_message,
-                    last_attempt_at, last_attempt_status, last_successful_refresh_at,
-                    last_http_status, last_latency_ms, new_items_inserted, is_active
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(source_name) DO UPDATE SET
-                    source_type=excluded.source_type,
-                    last_refresh_at=excluded.last_refresh_at,
-                    status=excluded.status,
-                    items_fetched=excluded.items_fetched,
-                    error_message=excluded.error_message,
-                    last_attempt_at=excluded.last_attempt_at,
-                    last_attempt_status=excluded.last_attempt_status,
-                    last_successful_refresh_at=COALESCE(excluded.last_successful_refresh_at, source_status.last_successful_refresh_at),
-                    last_http_status=excluded.last_http_status,
-                    last_latency_ms=excluded.last_latency_ms,
-                    new_items_inserted=excluded.new_items_inserted,
-                    is_active=excluded.is_active
-                """,
-                (
-                    source_name,
-                    source_type,
-                    now,
-                    clean_status,
-                    items_fetched,
-                    error_message,
-                    now,
-                    clean_status,
-                    last_successful,
-                    http_status,
-                    latency_ms,
-                    new_items_inserted,
-                    active_val,
-                ),
+            self._write_source_status(
+                conn.cursor(),
+                source_name=source_name,
+                source_type=source_type,
+                status=status,
+                items_fetched=items_fetched,
+                error_message=error_message,
+                http_status=http_status,
+                latency_ms=latency_ms,
+                new_items_inserted=new_items_inserted,
+                is_active=is_active,
             )
             conn.commit()
 

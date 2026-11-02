@@ -9,6 +9,16 @@ exclude = [
     "data"
 ]
 
+[tool.mypy]
+python_version = "3.12"
+files = ["backend", "src"]
+# Non-strict by design: catches real inconsistencies today and can be ratcheted
+# per package without a mass rewrite. Third-party stubs are not vendored.
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_configs = true
+check_untyped_defs = false
+
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 ignore = ["E501"]

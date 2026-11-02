@@ -67,7 +67,77 @@ LANGUAGE_MAP = {
     "malayalam": "ml",
     "punjabi": "pa",
     "urdu": "ur",
+    "odia": "or",
+    "assamese": "as",
 }
+
+# Mapping of common full country names returned by NewsData.io to ISO 3166-1 alpha-2 codes
+COUNTRY_NAME_TO_CODE = {
+    "india": "IN",
+    "united states of america": "US",
+    "united states": "US",
+    "united kingdom": "GB",
+    "australia": "AU",
+    "canada": "CA",
+    "germany": "DE",
+    "france": "FR",
+    "china": "CN",
+    "japan": "JP",
+    "russia": "RU",
+    "pakistan": "PK",
+    "bangladesh": "BD",
+    "sri lanka": "LK",
+    "nepal": "NP",
+    "singapore": "SG",
+    "united arab emirates": "AE",
+    "saudi arabia": "SA",
+    "turkey": "TR",
+    "south africa": "ZA",
+    "new zealand": "NZ",
+    "israel": "IL",
+    "ukraine": "UA",
+    "brazil": "BR",
+}
+
+
+def build_newsdata_query(
+    q: Optional[str] = None,
+    q_in_title: Optional[str] = None,
+    q_in_meta: Optional[str] = None,
+    max_length: int = 512,
+) -> Dict[str, str]:
+    """Validates and constructs mutually-exclusive search parameters for NewsData.io.
+
+    NewsData.io official documentation specifies:
+    - 'q', 'qInTitle', and 'qInMeta' cannot be used simultaneously.
+    - Parameter strings must not exceed 512 characters.
+
+    Raises:
+        ValueError: if multiple search modes are provided or length exceeds limit.
+    """
+    modes = {
+        "q": (q or "").strip(),
+        "qInTitle": (q_in_title or "").strip(),
+        "qInMeta": (q_in_meta or "").strip(),
+    }
+    active_modes = {k: v for k, v in modes.items() if v}
+
+    if len(active_modes) > 1:
+        raise ValueError(
+            f"NewsData.io allows only one search mode at a time ('q', 'qInTitle', or 'qInMeta'). "
+            f"Received: {list(active_modes.keys())}"
+        )
+
+    result: Dict[str, str] = {}
+    for param_name, query_val in active_modes.items():
+        if len(query_val) > max_length:
+            raise ValueError(
+                f"NewsData.io parameter '{param_name}' exceeds maximum allowed length of {max_length} characters "
+                f"({len(query_val)} characters)."
+            )
+        result[param_name] = query_val
+
+    return result
 
 
 class NewsDataClient:
@@ -201,7 +271,8 @@ class NewsDataClient:
                 if language:
                     base_params["language"] = language.strip().lower()
                 if query and query.strip():
-                    base_params["q"] = query.strip()
+                    validated_q = build_newsdata_query(q=query.strip())
+                    base_params.update(validated_q)
 
             elif profile == PROFILE_GLOBAL_LATEST:
                 # Global query behavior: No country='in' restriction
@@ -210,14 +281,16 @@ class NewsDataClient:
                 else:
                     base_params["language"] = "en"
                 if query and query.strip():
-                    base_params["q"] = query.strip()
+                    validated_q = build_newsdata_query(q=query.strip())
+                    base_params.update(validated_q)
 
             elif profile == PROFILE_INDIA_GLOBAL_COVERAGE:
                 # International outlets reporting about India:
                 # Exclude domestic Indian newsrooms using NewsData.io's excludecountry parameter
                 base_params["excludecountry"] = "in"
                 search_term = query.strip() if query and query.strip() else "India"
-                base_params["q"] = search_term
+                validated_q = build_newsdata_query(q=search_term)
+                base_params.update(validated_q)
                 if language:
                     base_params["language"] = language.strip().lower()
                 else:
@@ -553,10 +626,19 @@ class NewsDataClient:
 
             # Publisher country: Country where newsroom is based
             raw_country = item.get("country")
+            country_candidate: Optional[str] = None
             if isinstance(raw_country, list) and raw_country:
-                publisher_country = str(raw_country[0]).upper()
+                country_candidate = str(raw_country[0]).strip().lower()
             elif isinstance(raw_country, str) and raw_country.strip():
-                publisher_country = raw_country.strip().upper()
+                country_candidate = raw_country.strip().lower()
+
+            if country_candidate:
+                publisher_country = COUNTRY_NAME_TO_CODE.get(
+                    country_candidate,
+                    country_candidate.upper()
+                    if len(country_candidate) == 2
+                    else country_candidate.title(),
+                )
             elif discovery_profile == PROFILE_INDIA_PUBLISHERS:
                 publisher_country = "IN"
             else:
@@ -597,6 +679,16 @@ class NewsDataClient:
                 "creator": item.get("creator"),
                 "keywords": item.get("keywords"),
                 "image_url": item.get("image_url"),
+                "video_url": item.get("video_url"),
+                "sentiment": item.get("sentiment"),
+                "sentiment_stats": item.get("sentiment_stats"),
+                "ai_tag": item.get("ai_tag"),
+                "ai_region": item.get("ai_region"),
+                "ai_org": item.get("ai_org"),
+                "ai_summary": item.get("ai_summary"),
+                "duplicate": item.get("duplicate"),
+                "source_url": item.get("source_url"),
+                "source_icon": item.get("source_icon"),
                 "discovery_profile": discovery_profile,
                 "discovery_scope": discovery_scope,
                 "discovery_subject": discovery_subject,
@@ -639,7 +731,7 @@ class NewsDataClient:
             "User-Agent": _DEFAULT_USER_AGENT,
             "Accept": "application/json",
         }
-        params = {"country": "in", "size": 1}
+        params: Dict[str, Any] = {"country": "in", "size": 1}
 
         try:
             start = time.perf_counter()

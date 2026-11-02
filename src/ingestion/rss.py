@@ -51,7 +51,7 @@ def extract_entry_image_url(entry: Any) -> Optional[str]:
             )
             typ = getattr(enc, "type", None) or (enc.get("type") if isinstance(enc, dict) else "")
             if href and (
-                "image" in typ.lower()
+                "image" in str(typ or "").lower()
                 or any(
                     str(href).lower().endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")
                 )
@@ -380,7 +380,16 @@ class RssIngestionService:
                 )
                 if published_parsed:
                     try:
-                        dt = datetime(*published_parsed[:6], tzinfo=timezone.utc)
+                        parts = [int(part) for part in published_parsed[:6]]
+                        dt = datetime(
+                            parts[0],
+                            parts[1],
+                            parts[2],
+                            parts[3],
+                            parts[4],
+                            parts[5],
+                            tzinfo=timezone.utc,
+                        )
                         published_str = dt.isoformat()
                     except Exception:
                         published_str = str(published_val)

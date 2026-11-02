@@ -11,10 +11,10 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Lint, SAST & Pytest Suite
+  backend:
+    name: Lint, SAST, Contract & Pytest
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -35,19 +35,74 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Lint and format check with Ruff
-        run: |
-          ruff check src tests app.py
-          ruff format --check src tests app.py
+      - name: Compile Python sources
+        run: python -m compileall -q backend src scripts
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Format check with Ruff
+        run: ruff format --check .
+
+      # Type-checks the API boundary and domain engine. Non-strict by design:
+      # it catches real inconsistencies today and can be ratcheted per package.
+      - name: Type check (mypy)
+        run: mypy backend src
 
       - name: Static Application Security Testing (Bandit)
-        run: |
-          bandit -r src app.py -ll
+        run: bandit -r src backend scripts -ll
 
       - name: Dependency vulnerability audit (pip-audit)
-        run: |
-          pip-audit --progress-spinner off
+        run: pip-audit --progress-spinner off
 
-      - name: Run Pytest Suite
-        run: |
-          pytest tests/ -v
+      # Fails when the committed contract artifact no longer matches the app,
+      # so a response change cannot land without regenerating docs/openapi.json.
+      - name: OpenAPI contract drift
+        run: python scripts/export_openapi.py --check
+
+      # Fails when a backend schema change is not reflected in the frontend
+      # transport types in frontend/src/types/api.ts.
+      - name: Frontend transport-type parity
+        run: python scripts/check_frontend_contract.py
+
+      # Fails when README/docs advertise a route (or method) that the API does
+      # not implement, or omit an implemented route.
+      - name: Documentation route parity
+        run: python scripts/check_doc_routes.py
+
+      - name: Run Pytest suite
+        run: pytest tests/ -q
+
+  frontend:
+    name: Frontend Typecheck, Tests & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          submodules: false
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (oxlint)
+        run: pnpm run lint
+
+      - name: Typecheck and production build
+        run: pnpm run build
+
+      - name: Frontend tests
+        run: pnpm run test

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import pytest
 import requests
 from fastapi.testclient import TestClient
 
@@ -841,3 +842,76 @@ def test_multiprocess_quota_coordination_and_abandoned_recovery(tmp_path: Path):
     )
     assert allowed_after_expiry is True
     assert new_id is not None
+
+
+def test_build_newsdata_query_validation():
+    """Verify mutual exclusivity and length restrictions for NewsData.io query parameters."""
+    from src.ingestion.newsdata import build_newsdata_query
+
+    # Valid single query
+    res = build_newsdata_query(q="technology AND AI")
+    assert res == {"q": "technology AND AI"}
+
+    # Valid qInTitle
+    res_title = build_newsdata_query(q_in_title="ISRO satellite launch")
+    assert res_title == {"qInTitle": "ISRO satellite launch"}
+
+    # Valid qInMeta
+    res_meta = build_newsdata_query(q_in_meta="renewable energy")
+    assert res_meta == {"qInMeta": "renewable energy"}
+
+    # Mutually exclusive violation
+    with pytest.raises(ValueError, match="allows only one search mode at a time"):
+        build_newsdata_query(q="technology", q_in_title="space")
+
+    # Length violation (> 512 chars)
+    long_query = "keyword " * 75
+    with pytest.raises(ValueError, match="exceeds maximum allowed length"):
+        build_newsdata_query(q=long_query)
+
+
+def test_newsdata_extended_metadata_and_country_mapping(tmp_path: Path):
+    """Verify that extended metadata (ai_tag, sentiment, image_url) and country ISO codes are normalized."""
+    client = NewsDataClient(api_key="test_key")
+
+    mock_raw_item = {
+        "article_id": "nd_test_12345",
+        "title": "Indian Aerospace Advances Rapidly",
+        "link": "https://example.com/aerospace-report-101",
+        "description": "Report on aerospace development in Bangalore.",
+        "content": "Expanded content about satellite propulsion.",
+        "creator": ["Dr. K. Sharma"],
+        "keywords": ["aerospace", "satellites", "ISRO"],
+        "pubDate": "2026-11-02 04:00:00",
+        "country": ["india"],
+        "language": "hi",
+        "category": ["technology"],
+        "image_url": "https://example.com/images/rocket.jpg",
+        "video_url": "https://example.com/videos/launch.mp4",
+        "sentiment": "positive",
+        "sentiment_stats": {"positive": 80.0, "neutral": 15.0, "negative": 5.0},
+        "ai_tag": ["aerospace", "satellites"],
+        "ai_region": ["Bangalore"],
+        "ai_org": ["ISRO"],
+        "ai_summary": "Summary of recent Indian aerospace test results.",
+        "duplicate": False,
+        "source_name": "Bangalore Chronicle",
+        "source_id": "bangalore_chronicle",
+    }
+
+    articles = client._normalize_items(
+        raw_items=[mock_raw_item],
+        discovery_profile="india_publishers",
+        query_used="aerospace",
+    )
+
+    assert len(articles) == 1
+    art = articles[0]
+    assert art.country == "IN"  # Mapped from full name 'india' to ISO 2-letter 'IN'
+    assert art.language == "hi"
+    assert art.raw_metadata["image_url"] == "https://example.com/images/rocket.jpg"
+    assert art.raw_metadata["video_url"] == "https://example.com/videos/launch.mp4"
+    assert art.raw_metadata["sentiment"] == "positive"
+    assert art.raw_metadata["ai_tag"] == ["aerospace", "satellites"]
+    assert art.raw_metadata["ai_region"] == ["Bangalore"]
+    assert art.raw_metadata["ai_org"] == ["ISRO"]

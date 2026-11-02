@@ -13,15 +13,18 @@ All successful responses return:
 }
 ```
 
-Error responses return:
+Error responses return `application/problem+json` (RFC 9457) — the legacy
+`{success:false,error:{...}}` envelope is retired. Canonical semantics live in
+[`../API.md`](../API.md); the machine-readable contract is `docs/openapi.json`:
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human readable message",
-    "details": null
-  }
+  "type": "urn:newslens:problem:not-found",
+  "title": "Resource not found",
+  "status": 404,
+  "detail": "The requested article does not exist.",
+  "instance": "/api/v1/articles/missing",
+  "code": "NOT_FOUND",
+  "request_id": "9f2c1d7e5b8a4c30"
 }
 ```
 
@@ -61,3 +64,11 @@ Error responses return:
 
 ### 8. Methodology
 - `GET /methodology` — Institutional specification, dataset breakdown, evaluation metrics, and system limitations.
+
+### 9. Integrations
+- `GET /integrations` — Provider registry overview with status/telemetry per provider.
+- `GET /integrations/status` — Provider status list.
+- `GET /integrations/{provider_id}` — Single provider status and quota telemetry.
+- `GET /integrations/{provider_id}/quota` — NewsLens request-budget telemetry (`quota_supported` marks unsupported providers).
+- `POST /integrations/{provider_id}/test` — Bounded connectivity test; admin-authorized, no ingestion side effects.
+- `POST /integrations/{provider_id}/refresh` — On-demand ingestion; admin-authorized.

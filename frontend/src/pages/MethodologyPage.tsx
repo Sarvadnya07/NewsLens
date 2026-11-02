@@ -49,15 +49,15 @@ export const MethodologyPage: React.FC = () => {
       </div>
 
       {/* 4-Stage Architecture Cards matching Stitch */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
         {methodology.pipeline_stages.map((stage: PipelineStage) => (
           <div
             key={stage.stage_id}
-            className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs flex flex-col justify-between space-y-3"
+            className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:border-[#CBD5E1] transition-all"
           >
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded bg-[#EAF0FF] text-[#315FE8] text-[10px] font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#EAF0FF] text-[#315FE8] text-[10px] font-bold">
                   {stage.badge}
                 </span>
                 <span className="text-lg text-[#183B56]">⚙️</span>
@@ -67,7 +67,7 @@ export const MethodologyPage: React.FC = () => {
               </h3>
               <p className="text-xs text-[#64748B] leading-relaxed mt-2">{stage.description}</p>
             </div>
-            <div className="pt-2 border-t border-[#F1F5F9] text-[11px] font-semibold text-[#087F83]">
+            <div className="pt-2.5 border-t border-[#F1F5F9] text-[11px] font-semibold text-[#087F83]">
               {stage.details}
             </div>
           </div>
@@ -75,9 +75,9 @@ export const MethodologyPage: React.FC = () => {
       </div>
 
       {/* Model Performance Table & Dataset Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* Performance Table */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-lg border border-[#E2E8F0] shadow-xs space-y-4">
+        <div className="xl:col-span-7 bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-4 hover:shadow-md transition-all">
           <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
             <div>
               <h3 className="font-bold text-base text-[#183B56] font-serif">
@@ -121,7 +121,7 @@ export const MethodologyPage: React.FC = () => {
         </div>
 
         {/* Dataset Corpus Split */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-lg border border-[#E2E8F0] shadow-xs space-y-4">
+        <div className="xl:col-span-5 bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-4 hover:shadow-md transition-all">
           <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
             <h3 className="font-bold text-base text-[#183B56] font-serif">Dataset Corpus Split</h3>
             <span className="text-[10px] text-[#94A3B8]">Curated benchmark composition</span>

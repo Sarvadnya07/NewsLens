@@ -76,6 +76,7 @@ class ProblemDetails(BaseModel):
 # Codes are part of the public contract; never rename an existing code.
 ERROR_TAXONOMY: Dict[str, tuple[str, int, str]] = {
     "VALIDATION_ERROR": ("Request validation failed", 422, "validation-error"),
+    "EMPTY_INPUT": ("Request body is empty", 422, "empty-input"),
     "BAD_REQUEST": ("Malformed request", 400, "bad-request"),
     "UNAUTHORIZED": ("Authentication required", 401, "unauthorized"),
     "FORBIDDEN": ("Insufficient privileges", 403, "forbidden"),
@@ -182,7 +183,11 @@ def _field_errors(raw: Any) -> Optional[List[ProblemFieldError]]:
             )
         else:
             errors.append(
-                ProblemFieldError(field="request", message=_clean(item) or "Invalid value")
+                ProblemFieldError(
+                    field="request",
+                    message=_clean(item) or "Invalid value",
+                    code="invalid_field",
+                )
             )
     return errors or None
 

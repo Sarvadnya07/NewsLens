@@ -146,7 +146,9 @@ export const newsApi = {
 
   // Ingestion
   triggerRefresh: async (params?: IngestionRefreshParams) => {
-    const res = await api.post<APIResponse<IngestionRefreshResponse>>('/ingestion/refresh', params || {});
+    const res = await api.post<APIResponse<IngestionRefreshResponse>>('/ingestion/refresh', params || {}, {
+      timeout: 60000,
+    });
     return res.data.data;
   },
 
@@ -158,6 +160,24 @@ export const newsApi = {
   // Methodology
   getMethodology: async () => {
     const res = await api.get<APIResponse<MethodologyResponse>>('/methodology');
+    return res.data.data;
+  },
+
+  // Integrations Management
+  getIntegrationsOverview: async () => {
+    const res = await api.get<APIResponse<import('../types/api').IntegrationsOverview>>('/integrations');
+    return res.data.data;
+  },
+
+  testProviderConnection: async (providerId: string) => {
+    const res = await api.post<APIResponse<import('../types/api').ConnectionTestResult>>(`/integrations/${providerId}/test`);
+    return res.data.data;
+  },
+
+  refreshProvider: async (providerId: string, params?: { profile?: string; query?: string; max_pages?: number }) => {
+    const res = await api.post<APIResponse<import('../types/api').IntegrationRefreshResult>>(`/integrations/${providerId}/refresh`, params || {}, {
+      timeout: 60000,
+    });
     return res.data.data;
   },
 };

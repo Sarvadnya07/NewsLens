@@ -317,15 +317,15 @@ def test_manual_submission_is_idempotent_for_identical_payload(isolated_test_db)
     assert first.status_code == 201
     first_id = first.json()["data"]["id"]
 
-    total_after_first = c.get("/api/v1/articles?page=1&page_size=1").json()["data"][
-        "pagination"
-    ]["total_items"]
+    total_after_first = c.get("/api/v1/articles?page=1&page_size=1").json()["data"]["pagination"][
+        "total_items"
+    ]
 
     second = c.post("/api/v1/articles", json=payload)
     assert second.status_code == 201
     assert second.json()["data"]["id"] == first_id
 
-    total_after_second = c.get("/api/v1/articles?page=1&page_size=1").json()["data"][
-        "pagination"
-    ]["total_items"]
+    total_after_second = c.get("/api/v1/articles?page=1&page_size=1").json()["data"]["pagination"][
+        "total_items"
+    ]
     assert total_after_second == total_after_first

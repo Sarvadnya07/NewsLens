@@ -12,7 +12,7 @@
 [![SQLite](https://img.shields.io/badge/SQLite-WAL_Enabled-003B57.svg?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5+-F7931E.svg?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![Code Style: Ruff](https://img.shields.io/badge/Code_Style-Ruff-000000.svg?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
-[![Tests: Pytest & Vitest](https://img.shields.io/badge/Tests-96_Python_%7C_8_Vitest_Passing-brightgreen.svg)](tests/)
+[[![Tests: Pytest & Vitest](https://img.shields.io/badge/Tests-Pytest_%7C_Vitest-brightgreen.svg)](tests/)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -208,12 +208,16 @@ NewsLens-India/
 │   ├── tfidf_vectorizer.joblib    # Fitted TF-IDF vectorizer (10,000 features)
 │   └── evaluation_metrics.json    # Audited model performance metrics
 ├── docs/                          # In-depth architectural & developer documentation
+│   ├── API.md                     # REST contract, error taxonomy, limitations
 │   ├── DEVELOPMENT.md             # Developer manual & contributor guide
 │   └── diagnostics/               # Remediation audits & acceptance reports
 ├── scripts/                       # Operational & diagnostic utilities
 │   ├── run_all_checks.py          # Unified lint, security, & test runner
+│   ├── export_openapi.py          # Regenerates docs/openapi.json from the app
+│   ├── check_frontend_contract.py # Fails when TS types drift from the API
+│   ├── check_doc_routes.py        # Fails when docs advertise a missing route
 │   └── verify_newsdata_live.py    # NewsData.io diagnostic & safe connectivity test
-├── tests/                         # Test suites (96 tests total)
+├── tests/                         # Test suites
 │   ├── conftest.py                # Isolated test database fixture & safety guards
 │   ├── test_newsdata_ingestion.py # NewsData.io client, normalization, & endpoint tests
 │   ├── test_api_workflows.py      # FastAPI endpoint integration & workflow tests
@@ -480,7 +484,8 @@ NewsData.io is integrated as a quota-governed provider (`src/ingestion/newsdata.
 
 ### FastAPI REST API Reference
 
-The headless API exposes standardized endpoints under `/api/v1`:
+The headless API exposes standardized endpoints under `/api/v1`. Errors use RFC 9457
+Problem Details; see [`docs/API.md`](docs/API.md) for the contract and [`docs/openapi.json`](docs/openapi.json) for the generated specification:
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -497,6 +502,12 @@ The headless API exposes standardized endpoints under `/api/v1`:
 | `GET` | `/api/v1/coverage/clusters` | Calculates multi-publisher story clusters and syndication networks. |
 | `GET` | `/api/v1/coverage/graph` | Produces Cytoscape-compatible node and edge network topology. |
 | `GET` | `/api/v1/methodology` | Returns model parameters, dataset provenance, and evaluation metrics. |
+| `GET` | `/api/v1/integrations` | Provider registry with truthful maturity states and quota telemetry. |
+| `GET` | `/api/v1/integrations/status` | Provider status list. |
+| `GET` | `/api/v1/integrations/{provider_id}` | Single provider status and quota telemetry. |
+| `GET` | `/api/v1/integrations/{provider_id}/quota` | NewsLens request-budget telemetry. |
+| `POST` | `/api/v1/integrations/{provider_id}/test` | Bounded connectivity test (admin-authorized, no ingestion). |
+| `POST` | `/api/v1/integrations/{provider_id}/refresh` | On-demand provider ingestion (admin-authorized). |
 
 ---
 
@@ -505,7 +516,7 @@ The headless API exposes standardized endpoints under `/api/v1`:
 NewsLens India maintains strict automated test and verification pipelines. All tests must pass cleanly:
 
 ```powershell
-# 1. Run complete Python test suite (96 tests)
+# 1. Run the complete backend test suite
 python -m pytest -v
 
 # 2. Run Python static linting
@@ -580,7 +591,7 @@ Contributions are welcome! Please follow these steps:
 
 1. Create a feature branch (`git checkout -b feature/amazing-feature`).
 2. Adhere to code conventions (`ruff check .`, `ruff format .`).
-3. Ensure all 96 pytest tests and vitest tests pass.
+3. Ensure the full pytest and Vitest suites pass.
 4. Verify database changes include versioned migrations in `src/storage/migrations.py`.
 5. Submit a pull request with a detailed summary of changes and test evidence.
 

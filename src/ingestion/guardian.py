@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from backend.config import sanitize_text, settings
+from src.config import sanitize_text, settings
 from src.ingestion.models import (
     STATUS_DISABLED,
     STATUS_INVALID_RESPONSE,
@@ -74,8 +74,8 @@ class GuardianClient:
             }
 
         start = time.perf_counter()
-        params = {
-            "api-key": self.api_key.strip(),
+        params: Dict[str, Any] = {
+            "api-key": (self.api_key or "").strip(),
             "page-size": 1,
             "show-fields": "headline",
         }
@@ -182,7 +182,7 @@ class GuardianClient:
         # Quota reservation check
         reservation_id: Optional[int] = None
         if self.db:
-            allowed, reservation_id, reason = self.db.reserve_provider_budget(
+            allowed, reason, reservation_id = self.db.reserve_provider_budget(
                 provider_id=CANONICAL_GUARDIAN_ID,
                 profile=profile,
                 daily_budget=self.daily_budget,
@@ -202,7 +202,7 @@ class GuardianClient:
                 )
 
         params: Dict[str, Any] = {
-            "api-key": self.api_key.strip(),
+            "api-key": (self.api_key or "").strip(),
             "page-size": 20,
             "show-fields": "headline,trailText,byline,standfirst,thumbnail",
             "show-tags": "keyword,contributor",
@@ -238,7 +238,7 @@ class GuardianClient:
                         articles.append(norm)
 
                 if self.db and reservation_id:
-                    self.db.finalize_provider_reservation(
+                    self.db.finalize_provider_request(
                         reservation_id=reservation_id,
                         status_code=200,
                         outcome="success" if articles else "no_results",
@@ -259,7 +259,7 @@ class GuardianClient:
                 )
             elif resp.status_code == 429:
                 if self.db and reservation_id:
-                    self.db.finalize_provider_reservation(
+                    self.db.finalize_provider_request(
                         reservation_id=reservation_id,
                         status_code=429,
                         outcome="rate_limited",
@@ -279,7 +279,7 @@ class GuardianClient:
                 )
             else:
                 if self.db and reservation_id:
-                    self.db.finalize_provider_reservation(
+                    self.db.finalize_provider_request(
                         reservation_id=reservation_id,
                         status_code=resp.status_code,
                         outcome="provider_error",
@@ -300,7 +300,7 @@ class GuardianClient:
         except requests.exceptions.Timeout:
             dur = (time.perf_counter() - start_time) * 1000
             if self.db and reservation_id:
-                self.db.finalize_provider_reservation(
+                self.db.finalize_provider_request(
                     reservation_id=reservation_id,
                     status_code=None,
                     outcome="timeout",
@@ -320,7 +320,7 @@ class GuardianClient:
         except Exception as exc:
             dur = (time.perf_counter() - start_time) * 1000
             if self.db and reservation_id:
-                self.db.finalize_provider_reservation(
+                self.db.finalize_provider_request(
                     reservation_id=reservation_id,
                     status_code=None,
                     outcome="error" if req_dispatched else "canceled",

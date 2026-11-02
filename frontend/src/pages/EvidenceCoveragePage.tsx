@@ -60,33 +60,42 @@ export const EvidenceCoveragePage: React.FC = () => {
             'background-color': 'data(bgColor)',
             label: 'data(label)',
             color: '#FFFFFF',
-            'font-size': '10px',
+            'font-family': 'Inter, system-ui, sans-serif',
+            'font-size': '11px',
+            'font-weight': 600,
             'text-valign': 'center',
             'text-halign': 'center',
             'text-wrap': 'wrap',
-            'text-max-width': '90px',
-            width: 50,
-            height: 50,
-            'border-width': 2,
+            'text-max-width': '100px',
+            width: 56,
+            height: 56,
+            'border-width': 2.5,
             'border-color': '#FFFFFF',
           },
         },
         {
           selector: 'edge',
           style: {
-            width: 1.5,
+            width: 2,
             'line-color': '#CBD5E1',
             'curve-style': 'bezier',
             label: 'data(label)',
-            'font-size': '8px',
-            color: '#64748B',
+            'font-family': 'Inter, system-ui, sans-serif',
+            'font-size': '9px',
+            'font-weight': 500,
+            color: '#475569',
+            'text-background-color': '#FFFFFF',
+            'text-background-opacity': 0.9,
+            'text-background-padding': '2px',
+            'text-background-shape': 'roundrectangle',
           },
         },
       ],
       layout: {
         name: 'cose',
         animate: false,
-        padding: 30,
+        padding: 40,
+        componentSpacing: 80,
       },
     });
 
@@ -136,25 +145,25 @@ export const EvidenceCoveragePage: React.FC = () => {
       </div>
 
       {/* Main Grid: Multi-Publisher Matrix & Provenance Ledger */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* Left Column: Analyzed Text Passage & Provenance */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="xl:col-span-5 space-y-6">
           {/* Analyzed Text Passage Card */}
-          <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs space-y-3">
+          <div className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-3.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#183B56] uppercase text-[10px]">CURRENT INVESTIGATION PASSAGE</span>
-              <span className="px-2 py-0.5 rounded bg-[#EBF8FF] text-[#315FE8] font-bold text-[10px]">
+              <span className="font-bold text-[#183B56] uppercase text-[10px] tracking-wide">CURRENT INVESTIGATION PASSAGE</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#EBF8FF] text-[#315FE8] font-bold text-[10px]">
                 Active Ingest Stream
               </span>
             </div>
 
-            <p className="text-sm font-serif italic text-[#142B4A] bg-[#F8FAFC] p-4 rounded border-l-4 border-[#315FE8] leading-relaxed">
+            <p className="text-sm xl:text-base font-serif italic text-[#142B4A] bg-[#F8FAFC] p-4.5 rounded-lg border-l-4 border-[#315FE8] leading-relaxed shadow-xs">
               {clustersData && clustersData.length > 0
                 ? clustersData[0].primary_article.title
                 : 'Select an article from News Monitor to inspect its provenance and cross-publisher reporting clusters.'}
             </p>
 
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-[#F1F5F9]">
+            <div className="flex items-center justify-between text-xs pt-2.5 border-t border-[#F1F5F9]">
               <span className="text-[#64748B]">Primary Wire Attribution:</span>
               <span className="font-bold text-[#087F83]">
                 {clustersData && clustersData.length > 0 ? clustersData[0].primary_article.publisher : 'Indian News Wires'}
@@ -163,54 +172,59 @@ export const EvidenceCoveragePage: React.FC = () => {
           </div>
 
           {/* Cryptographic Provenance Ledger */}
-          <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs space-y-3">
+          <div className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-3.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#183B56] uppercase text-[10px]">PROVENANCE RECORD</span>
-              <span className="font-mono text-[10px] text-[#087F83] bg-[#E5F6F3] px-2 py-0.5 rounded">
+              <span className="font-bold text-[#183B56] uppercase text-[10px] tracking-wide">PROVENANCE RECORD</span>
+              <span className="font-mono text-[10px] text-[#087F83] bg-[#E5F6F3] px-2 py-0.5 rounded font-bold">
                 SQLite Persistence
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs bg-[#F8FAFC] p-3 rounded">
+            <div className="grid grid-cols-2 gap-3 text-xs bg-[#F8FAFC] p-3.5 rounded-lg border border-[#E2E8F0]">
               <div>
-                <span className="text-[#94A3B8] text-[10px] block">Source Beat:</span>
+                <span className="text-[#94A3B8] text-[10px] block font-medium">Source Beat:</span>
                 <strong className="text-[#183B56]">Syndicated RSS / GDELT</strong>
               </div>
               <div>
-                <span className="text-[#94A3B8] text-[10px] block">Datastore Records:</span>
+                <span className="text-[#94A3B8] text-[10px] block font-medium">Datastore Records:</span>
                 <strong className="text-[#183B56]">
                   {summary ? `${summary.total_articles.toLocaleString()} Stored Articles` : 'Active Datastore'}
                 </strong>
               </div>
             </div>
 
-            <div className="text-[11px] font-mono text-[#64748B] flex items-center justify-between border-t border-[#F1F5F9] pt-2">
+            <div className="text-[11px] font-mono text-[#64748B] flex items-center justify-between border-t border-[#F1F5F9] pt-2.5">
               <span>Canonical Ingestion Hash: Verified</span>
-              <span className="text-[#10B981] font-semibold">Indexed</span>
+              <span className="text-[#10B981] font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> Indexed
+              </span>
             </div>
           </div>
 
-          {/* Synthesis & Discrepancy Analysis (3 Columns) */}
-          <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs space-y-3">
+          {/* Synthesis & Discrepancy Analysis (3 Cards) */}
+          <div className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-3.5">
             <h4 className="font-bold text-sm text-[#183B56] font-serif">Coverage Analysis & Cross-Referencing</h4>
-            <div className="space-y-2 text-xs">
-              <div className="p-2.5 rounded bg-[#F8FAFC] border border-[#E2E8F0]">
+            <div className="space-y-2.5 text-xs">
+              <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#087F83]" />
                 <strong className="text-[#087F83] block mb-1">Multi-Outlet Syndication Clusters</strong>
-                <p className="text-[#64748B] text-[11px]">
+                <p className="text-[#64748B] text-[11px] leading-relaxed">
                   Articles grouped by cosine similarity (threshold ≥ 0.55). Reprints from wire agencies are clustered to isolate unified feeds from independent investigations.
                 </p>
               </div>
 
-              <div className="p-2.5 rounded bg-[#F8FAFC] border border-[#E2E8F0]">
+              <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#315FE8]" />
                 <strong className="text-[#315FE8] block mb-1">Fact-Check Cross Indexing</strong>
-                <p className="text-[#64748B] text-[11px]">
+                <p className="text-[#64748B] text-[11px] leading-relaxed">
                   Automated BM25Plus retrieval compares unverified reports against indexed ClaimReview archives (BOOM Live, PIB Fact Check, Alt News).
                 </p>
               </div>
 
-              <div className="p-2.5 rounded bg-[#F8FAFC] border border-[#E2E8F0]">
+              <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#EF806B]" />
                 <strong className="text-[#EF806B] block mb-1">Probabilistic Linguistic Screening</strong>
-                <p className="text-[#64748B] text-[11px]">
+                <p className="text-[#64748B] text-[11px] leading-relaxed">
                   Lexical panic markers are scored using TF-IDF n-grams and Logistic Regression trained on benchmark news framing corpora.
                 </p>
               </div>
@@ -219,42 +233,42 @@ export const EvidenceCoveragePage: React.FC = () => {
         </div>
 
         {/* Right Column: Multi-Publisher Matrix & Graph Topology */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="xl:col-span-7 space-y-6">
           {/* Cytoscape Coverage Graph */}
-          <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs space-y-3">
-            <div className="flex items-center justify-between text-xs border-b border-[#F1F5F9] pb-2">
+          <div className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between text-xs border-b border-[#F1F5F9] pb-3">
               <div className="flex items-center gap-2">
                 <Network className="w-4 h-4 text-[#315FE8]" />
                 <h4 className="font-bold text-sm text-[#183B56]">Coverage Graph Topology</h4>
               </div>
-              <span className="text-[10px] text-[#64748B]">
+              <span className="text-[10px] text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded font-mono">
                 Interactive Cytoscape.js • Pan & Zoom
               </span>
             </div>
 
             <div
               ref={cyRef}
-              className="w-full h-72 bg-[#F8FAFC] rounded border border-[#E2E8F0]"
+              className="w-full h-80 xl:h-[420px] bg-[#F8FAFC] rounded-xl border border-[#CBD5E1]/60 shadow-inner"
             />
 
-            <div className="flex items-center justify-between text-[11px] text-[#64748B]">
+            <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1">
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#183B56]"></span> Article Node
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#183B56] ring-1 ring-white"></span> Article Node
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#087F83]"></span> Publisher Node
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#087F83] ring-1 ring-white"></span> Publisher Node
                 </span>
               </div>
-              <span>Click node to inspect relationships</span>
+              <span className="text-[10px] text-[#94A3B8]">Click and drag nodes to explore relationship clusters</span>
             </div>
           </div>
 
           {/* Multi-Publisher Coverage Matrix */}
-          <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs space-y-4">
-            <div className="flex items-center justify-between text-xs border-b border-[#F1F5F9] pb-2">
+          <div className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-xs space-y-4">
+            <div className="flex items-center justify-between text-xs border-b border-[#F1F5F9] pb-3">
               <h4 className="font-bold text-sm text-[#183B56] font-serif">Multi-Publisher Coverage Matrix</h4>
-              <span className="text-[10px] bg-[#EAF0FF] text-[#315FE8] font-bold px-2 py-0.5 rounded">
+              <span className="text-[10px] bg-[#EAF0FF] text-[#315FE8] font-bold px-2.5 py-0.5 rounded-full">
                 Cross-Indexed Wires
               </span>
             </div>
@@ -264,21 +278,21 @@ export const EvidenceCoveragePage: React.FC = () => {
                 <div className="p-8 text-center text-xs text-[#64748B]">Loading coverage clusters...</div>
               ) : (
                 clustersData?.slice(0, 4).map((cluster: any, idx: number) => (
-                  <div key={idx} className="p-4 rounded-md border border-[#E2E8F0] bg-[#F8FAFC] space-y-2">
+                  <div key={idx} className="p-4.5 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] space-y-2 hover:border-[#CBD5E1] transition-all">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-[#183B56]">{cluster.primary_article.publisher}</span>
-                      <span className="text-[10px] text-[#94A3B8]">
+                      <span className="text-[10px] text-[#94A3B8] font-mono">
                         {new Date(cluster.primary_article.published_at).toLocaleDateString()}
                       </span>
                     </div>
 
-                    <h5 className="text-xs font-bold text-[#142B4A] leading-snug">
+                    <h5 className="text-xs sm:text-sm font-bold text-[#142B4A] leading-snug font-serif">
                       {cluster.primary_article.title}
                     </h5>
 
-                    <div className="flex items-center justify-between text-[11px] pt-1 text-[#64748B]">
-                      <span>Publishers: {cluster.publishers.join(', ')}</span>
-                      <span className="font-semibold text-[#087F83]">
+                    <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-[#F1F5F9] text-[#64748B]">
+                      <span className="truncate max-w-[280px]">Publishers: {cluster.publishers.join(', ')}</span>
+                      <span className="font-semibold text-[#087F83] shrink-0 bg-[#E5F6F3] px-2 py-0.5 rounded text-[10px]">
                         {cluster.total_coverage_count} Syndicated Outlets
                       </span>
                     </div>

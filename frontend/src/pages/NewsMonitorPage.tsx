@@ -66,7 +66,13 @@ export const NewsMonitorPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
     onError: (err: any) => {
-      setSyncError(err?.response?.data?.detail || err?.message || 'Sync failed.');
+      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout')) {
+        setSyncError(
+          'Synchronization request timed out after 60 seconds. Upstream ingestion tasks may still be continuing in the background; refresh the feed view shortly to inspect updated articles.'
+        );
+      } else {
+        setSyncError(err?.response?.data?.detail || err?.message || 'Sync failed.');
+      }
     },
   });
 
@@ -158,7 +164,7 @@ export const NewsMonitorPage: React.FC = () => {
       </div>
 
       {/* Upstream Ingestion & Quota Governance Trigger Panel */}
-      <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg p-4 space-y-3">
+      <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl p-5 space-y-3.5 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-[#315FE8]" />
@@ -192,7 +198,7 @@ export const NewsMonitorPage: React.FC = () => {
                 setSyncError(null);
               }}
               disabled={syncMutation.isPending}
-              className="w-full px-3 py-1.5 bg-white border border-[#CBD5E1] rounded text-xs text-[#183B56] focus:outline-none focus:border-[#315FE8]"
+              className="w-full px-3 py-2 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#183B56] focus:outline-none focus:border-[#315FE8] font-sans"
             >
               <option value="newsdata_india">NewsData.io — Indian Publishers (country='in')</option>
               <option value="newsdata_global">NewsData.io — Global Latest (international)</option>
@@ -209,10 +215,10 @@ export const NewsMonitorPage: React.FC = () => {
             <button
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
-              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded text-xs font-semibold text-white transition-all shadow-xs cursor-pointer ${
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold text-white transition-all shadow-xs cursor-pointer ${
                 syncMutation.isPending
                   ? 'bg-[#94A3B8] cursor-not-allowed'
-                  : 'bg-[#315FE8] hover:bg-[#20496B]'
+                  : 'bg-gradient-to-r from-[#183B56] to-[#20496B] hover:from-[#20496B] hover:to-[#315FE8]'
               }`}
             >
               <RotateCw className={`w-3.5 h-3.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
@@ -306,33 +312,33 @@ export const NewsMonitorPage: React.FC = () => {
       </div>
 
       {/* Multi-Axis Filter Toolbar */}
-      <div className="bg-white p-4 rounded-lg border border-[#E2E8F0] shadow-xs space-y-3">
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
+      <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-xs space-y-3.5 hover:border-[#CBD5E1] transition-all">
+        <form onSubmit={handleSearchSubmit} className="flex gap-2.5">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={inputSearch}
               onChange={(e) => setInputSearch(e.target.value)}
               placeholder="Search headline keywords across ingested Indian news archive..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded-md focus:outline-none focus:border-[#315FE8]"
+              className="w-full pl-10 pr-4 py-2 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg focus:outline-none focus:border-[#315FE8] font-sans"
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-[#183B56] hover:bg-[#20496B] text-white rounded text-xs font-semibold transition-colors cursor-pointer"
+            className="px-5 py-2 bg-gradient-to-r from-[#183B56] to-[#20496B] hover:from-[#20496B] hover:to-[#315FE8] text-white rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer"
           >
             Search Coverage
           </button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[#F1F5F9] text-xs">
+        <div className="flex flex-wrap items-center gap-4 pt-2.5 border-t border-[#F1F5F9] text-xs">
           <div className="flex items-center gap-2">
             <span className="text-[#64748B] font-medium">Ingestion Pipe:</span>
             <select
               value={sourceType}
               onChange={(e) => handleFilterChange('source', e.target.value)}
-              className="px-2 py-1 bg-[#F8FAFC] border border-[#CBD5E1] rounded text-xs focus:outline-none"
+              className="px-3 py-1.5 bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg text-xs focus:outline-none font-sans"
             >
               <option value="all">Source: All (GDELT + RSS + NewsData)</option>
               <option value="rss">Source: Syndicated RSS Only</option>
@@ -350,7 +356,7 @@ export const NewsMonitorPage: React.FC = () => {
             <select
               value={sortOrder}
               onChange={(e) => handleFilterChange('sort', e.target.value)}
-              className="px-2 py-1 bg-[#F8FAFC] border border-[#CBD5E1] rounded text-xs focus:outline-none"
+              className="px-3 py-1.5 bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg text-xs focus:outline-none font-sans"
             >
               <option value="Recency">Sort: Recency (Newest First)</option>
               <option value="Oldest">Sort: Chronological (Oldest First)</option>
@@ -372,7 +378,7 @@ export const NewsMonitorPage: React.FC = () => {
       </div>
 
       {/* Methodological Alert Banner */}
-      <div className="p-3 bg-[#EBF8FF] border border-[#BEE3F8] rounded text-xs text-[#087F83] flex items-center justify-between">
+      <div className="p-3.5 bg-[#EBF8FF] border border-[#BEE3F8] rounded-xl text-xs text-[#087F83] flex items-center justify-between shadow-xs">
         <div>
           <strong>ℹ️ Methodological Note:</strong> Results aggregate open syndicated feeds and GDELT open-data endpoints. Duplicate reports frequently represent wire distribution (PTI/ANI) rather than independent corroboration.
         </div>
@@ -383,30 +389,30 @@ export const NewsMonitorPage: React.FC = () => {
 
       {/* Article Results Ledger */}
       {isLoading ? (
-        <div className="p-12 text-center text-xs text-[#64748B] bg-white rounded-lg border border-[#E2E8F0]">
+        <div className="p-12 text-center text-xs text-[#64748B] bg-white rounded-xl border border-[#E2E8F0] shadow-xs">
           Scanning database and retrieving matching records...
         </div>
       ) : error || !data ? (
-        <div className="p-6 bg-red-50 text-red-700 rounded-lg border border-red-200 text-xs">
+        <div className="p-6 bg-red-50 text-red-700 rounded-xl border border-red-200 text-xs shadow-xs">
           Error retrieving articles from database.
         </div>
       ) : data.items.length === 0 ? (
-        <div className="p-12 text-center text-xs text-[#64748B] bg-white rounded-lg border border-[#E2E8F0]">
+        <div className="p-12 text-center text-xs text-[#64748B] bg-white rounded-xl border border-[#E2E8F0] shadow-xs">
           No news articles found matching the current criteria.
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#64748B]">
+          <div className="flex items-center justify-between text-xs text-[#64748B] px-1">
             <span>
               <strong>{data.pagination.total_items}</strong> records identified • Page {data.pagination.page} of {data.pagination.total_pages}
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {data.items.map((art: Article) => (
               <article
                 key={art.id}
-                className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-xs hover:border-[#CBD5E1] transition-all space-y-3"
+                className="bg-white p-5 sm:p-6 rounded-xl border border-[#E2E8F0] shadow-xs hover:shadow-md hover:border-[#CBD5E1] transition-all space-y-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">

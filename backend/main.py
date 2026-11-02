@@ -10,14 +10,16 @@ older or minimal settings object can never silently disable authorization.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 import threading
 import time
 import uuid
 from collections import deque
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from typing import Deque, Dict, Optional, Tuple
+from typing import Deque, Dict, Optional, Tuple, cast
 
 from fastapi import FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
@@ -25,6 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response
+from starlette.types import ExceptionHandler
 
 from backend.api.errors import (
     NewsLensAPIException,
@@ -61,6 +64,7 @@ LOCAL_CLIENT_HOSTS = frozenset({"127.0.0.1", "::1", "::ffff:127.0.0.1", "localho
 
 request_id_context: ContextVar[Optional[str]] = ContextVar("newslens_request_id", default=None)
 access_logger = logging.getLogger("backend.api.access")
+logger = logging.getLogger(__name__)
 
 OPENAPI_TAGS = [
     {"name": "Health", "description": "Liveness and readiness probes."},
@@ -171,6 +175,10 @@ def verify_admin_access(
     Comparison is constant time; expected and supplied values are never echoed.
     """
     import hmac
+
+    # Fallback if invoked directly outside FastAPI dependency solver
+    if not isinstance(x_admin_key, str):
+        x_admin_key = request.headers.get("X-Admin-Key")
 
     bypass_allowed = (
         not is_production()
@@ -297,6 +305,60 @@ def enforce_rate_limit(request: Request, scope: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Refresh single-flight
+# ---------------------------------------------------------------------------
+
+SHUTDOWN_DRAIN_SECONDS = 10.0
+
+
+class RefreshCoordinator:
+    """Process-local single-flight guard for provider refreshes.
+
+    A refresh fans out to several upstreams and runs inside the request thread,
+    so a burst of clients could otherwise stack dozens of sequential provider
+    loops on the threadpool (and burn provider quota in parallel). This guard
+    rejects a duplicate refresh for the same scope instead of queueing it.
+
+    It is deliberately process-local: it prevents pile-up within one instance,
+    not across workers. See docs/API.md for that limitation.
+    """
+
+    def __init__(self) -> None:
+        self._active: Dict[str, float] = {}
+        self._lock = threading.Lock()
+
+    def try_start(self, key: str) -> bool:
+        """Claims a refresh slot, or reports that one is already running."""
+        with self._lock:
+            if key in self._active:
+                return False
+            self._active[key] = time.monotonic()
+            return True
+
+    def finish(self, key: str) -> None:
+        """Releases a refresh slot."""
+        with self._lock:
+            self._active.pop(key, None)
+
+    def active_count(self) -> int:
+        """Number of refreshes currently holding a slot."""
+        with self._lock:
+            return len(self._active)
+
+    def drain(self, timeout_seconds: float = SHUTDOWN_DRAIN_SECONDS) -> bool:
+        """Waits for in-flight refreshes to finish; True when fully drained."""
+        deadline = time.monotonic() + max(timeout_seconds, 0.0)
+        while time.monotonic() < deadline:
+            if self.active_count() == 0:
+                return True
+            time.sleep(0.05)
+        return self.active_count() == 0
+
+
+refresh_coordinator = RefreshCoordinator()
+
+
+# ---------------------------------------------------------------------------
 # Request correlation
 # ---------------------------------------------------------------------------
 
@@ -398,6 +460,23 @@ def _install_openapi_contract(app: FastAPI) -> None:
     app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Bounded graceful shutdown: stop accepting refreshes, then drain them."""
+    logger.info("NewsLens API started (env=%s)", resolve_app_env())
+    yield
+    in_flight = refresh_coordinator.active_count()
+    logger.info("Shutdown requested; draining %d in-flight refresh(es)", in_flight)
+    if await asyncio.to_thread(refresh_coordinator.drain):
+        logger.info("Shutdown drain complete")
+    else:
+        logger.warning(
+            "Shutdown drain timed out with %d refresh(es) still running; "
+            "provider quota reservations expire automatically after the lease window",
+            refresh_coordinator.active_count(),
+        )
+
+
 def create_app() -> FastAPI:
     """Builds and configures the FastAPI application instance.
 
@@ -415,6 +494,7 @@ def create_app() -> FastAPI:
         ),
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
         openapi_tags=OPENAPI_TAGS,
     )
 
@@ -429,9 +509,18 @@ def create_app() -> FastAPI:
         expose_headers=[REQUEST_ID_HEADER],
     )
 
-    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(NewsLensAPIException, api_exception_handler)
+    app.add_exception_handler(
+        StarletteHTTPException,
+        cast(ExceptionHandler, http_exception_handler),
+    )
+    app.add_exception_handler(
+        RequestValidationError,
+        cast(ExceptionHandler, validation_exception_handler),
+    )
+    app.add_exception_handler(
+        NewsLensAPIException,
+        cast(ExceptionHandler, api_exception_handler),
+    )
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
     api_prefix = settings.API_V1_STR

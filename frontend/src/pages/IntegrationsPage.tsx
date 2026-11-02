@@ -139,6 +139,12 @@ AMAR_UJALA_RSS_ENABLED=true`;
             <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Operational
           </span>
         );
+      case 'degraded':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+            <Clock className="w-3 h-3 text-amber-600" /> Stale
+          </span>
+        );
       case 'configured_not_tested':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
@@ -297,8 +303,8 @@ AMAR_UJALA_RSS_ENABLED=true`;
         ))}
       </div>
 
-      {/* Providers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Providers Grid - Optimized for 1080p Desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
         {filteredProviders.map((provider) => {
           const testRes = testResults[provider.id];
           const isTesting = testMutation.isPending && testMutation.variables === provider.id;
@@ -362,7 +368,7 @@ AMAR_UJALA_RSS_ENABLED=true`;
                     <div className="flex items-center justify-between text-[#64748B]">
                       <span>Daily Quota:</span>
                       <span className="font-medium text-[#1E293B]">
-                        {provider.quota.daily_consumed} / {provider.quota.daily_limit || '∞'} used
+                        {provider.quota.used ?? '—'} / {provider.quota.limit ?? '∞'} used
                       </span>
                     </div>
                   )}

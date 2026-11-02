@@ -26,7 +26,12 @@ def list_articles(
         None, description="india_publishers, global_latest, or india_global_coverage"
     ),
     sort_order: str = Query("Recency", pattern="^(Recency|Oldest|Chronological)$"),
-    page: int = Query(1, ge=1),
+    page: int = Query(
+        1,
+        ge=1,
+        le=100_000,
+        description="Page number; bounded so offsets stay representable",
+    ),
     page_size: int = Query(20, ge=1, le=100),
     service: NewsLensService = Depends(get_news_service),
 ):

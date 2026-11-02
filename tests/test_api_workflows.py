@@ -109,8 +109,12 @@ def test_api_article_detail_and_404(isolated_test_db):
     # 2. Non-existent article
     resp_404 = client.get("/api/v1/articles/nonexistent-id-99999")
     assert resp_404.status_code == status.HTTP_404_NOT_FOUND
-    error = resp_404.json()["error"]
-    assert error["code"] == "ARTICLE_NOT_FOUND"
+    assert resp_404.headers["content-type"].startswith("application/problem+json")
+    problem = resp_404.json()
+    assert problem["code"] == "ARTICLE_NOT_FOUND"
+    assert problem["type"].startswith("urn:newslens:problem:")
+    assert problem["status"] == status.HTTP_404_NOT_FOUND
+    assert problem["request_id"]
 
 
 def test_api_manual_article_submission(isolated_test_db):
@@ -168,7 +172,10 @@ def test_api_analysis_empty_input_validation(isolated_test_db):
     resp = client.post("/api/v1/analysis", json={"text": "   "})
     assert resp.status_code == 422
     body = resp.json()
-    assert "detail" in body or "error" in body
+    assert resp.headers["content-type"].startswith("application/problem+json")
+    assert body["code"] == "VALIDATION_ERROR"
+    assert body["status"] == 422
+    assert body["errors"]
 
 
 def test_api_evidence_search_bm25_plus(isolated_test_db):

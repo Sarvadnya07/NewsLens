@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from backend.config import settings
+from src.config import settings
 from src.ingestion.currents import CurrentsClient
 from src.ingestion.factcheck import GoogleFactCheckClient
 from src.ingestion.gdelt import GdeltClient
@@ -72,26 +73,12 @@ class IntegrationManager:
         # Retrieve database telemetry
         db_status = self.db.get_source_status(descriptor.name) or {}
 
-        # Retrieve quota telemetry where applicable
-        quota = None
-        if provider_id == CANONICAL_NEWSDATA_ID:
-            quota = self.db.get_provider_quota_telemetry(
-                provider_id=CANONICAL_NEWSDATA_ID,
-                daily_budget=self.newsdata.daily_budget,
-                rolling_15m_budget=self.newsdata.rolling_15m_budget,
-            )
-        elif provider_id == CANONICAL_CURRENTS_ID:
-            quota = self.db.get_provider_quota_telemetry(
-                provider_id=CANONICAL_CURRENTS_ID,
-                daily_budget=self.currents.daily_budget,
-                rolling_15m_budget=self.currents.rolling_15m_budget,
-            )
-        elif provider_id == CANONICAL_GUARDIAN_ID:
-            quota = self.db.get_provider_quota_telemetry(
-                provider_id=CANONICAL_GUARDIAN_ID,
-                daily_budget=self.guardian.daily_budget,
-                rolling_15m_budget=self.guardian.rolling_15m_budget,
-            )
+        # Canonical quota DTO (None when NewsLens manages no budget for this provider)
+        quota = self._quota_shape(provider_id)
+
+        # A historical success must not keep a provider "operational" forever.
+        last_evidence_at = db_status.get("last_attempt_at") or db_status.get("last_refresh_at")
+        evidence_is_fresh = self._evidence_is_fresh(last_evidence_at)
 
         # Status badge logic
         status_label = "not_configured"
@@ -109,7 +96,7 @@ class IntegrationManager:
             # Check if live authenticated test succeeded
             last_status = db_status.get("last_attempt_status") or db_status.get("status")
             if last_status == STATUS_SUCCESS:
-                status_label = "operational"
+                status_label = "operational" if evidence_is_fresh else "degraded"
             elif last_status == STATUS_RATE_LIMITED:
                 status_label = "rate_limited"
             elif last_status in (
@@ -124,7 +111,7 @@ class IntegrationManager:
             # Open/no-key feeds (RSS and GDELT)
             last_status = db_status.get("last_attempt_status") or db_status.get("status")
             if last_status == STATUS_SUCCESS:
-                status_label = "operational"
+                status_label = "operational" if evidence_is_fresh else "degraded"
             elif last_status == STATUS_RATE_LIMITED:
                 status_label = "rate_limited"
             elif last_status in (
@@ -134,11 +121,8 @@ class IntegrationManager:
             ):
                 status_label = "provider_error"
             else:
-                status_label = (
-                    "operational"
-                    if descriptor.source_type in ("rss", "gdelt")
-                    else "configured_not_tested"
-                )
+                # No attempt evidence: being reachable by design is not proof of health.
+                status_label = "configured_not_tested"
 
         return {
             "id": descriptor.id,
@@ -168,7 +152,8 @@ class IntegrationManager:
 
     def get_all_provider_statuses(self) -> List[Dict[str, Any]]:
         """Returns current operational status for all registered providers."""
-        return [self.get_provider_status(pid) for pid in PROVIDER_REGISTRY.keys() if pid]
+        statuses = (self.get_provider_status(pid) for pid in PROVIDER_REGISTRY if pid)
+        return [status for status in statuses if status is not None]
 
     def test_provider_connection(self, provider_id: str) -> Dict[str, Any]:
         """Performs a safe, bounded connection test for the requested provider."""
@@ -247,9 +232,12 @@ class IntegrationManager:
             return {
                 "provider_id": provider_id,
                 "success": False,
+                "status": "not_found",
                 "message": f"Unknown provider '{provider_id}'.",
                 "items_fetched": 0,
                 "new_stored": 0,
+                "duration_ms": 0.0,
+                "error_message": f"Unknown provider '{provider_id}'.",
             }
 
         start = time.perf_counter()
@@ -414,9 +402,73 @@ class IntegrationManager:
         return {
             "provider_id": provider_id,
             "success": False,
+            "status": "not_implemented",
             "message": f"Refresh not supported for provider '{provider_id}'.",
             "items_fetched": 0,
             "new_stored": 0,
+            "duration_ms": 0.0,
+            "error_message": f"Refresh is not implemented for provider '{provider_id}'.",
+        }
+
+    def _evidence_is_fresh(self, timestamp: Optional[str]) -> bool:
+        """True when recorded verification evidence is inside the staleness window."""
+        raw = str(timestamp or "").strip()
+        if not raw:
+            return False
+        try:
+            observed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return False
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=timezone.utc)
+        window = float(getattr(settings, "PROVIDER_STATUS_STALENESS_HOURS", 24.0) or 24.0)
+        return datetime.now(timezone.utc) - observed <= timedelta(hours=window)
+
+    def _quota_shape(self, provider_id: str) -> Optional[Dict[str, Any]]:
+        """Maps the request ledger into the public quota DTO shape.
+
+        Returns ``None`` for providers without a NewsLens-managed request budget
+        so the API reports ``quota_supported: false`` instead of fabricated zeros.
+        """
+        if provider_id == CANONICAL_NEWSDATA_ID:
+            raw = self.db.get_provider_quota_telemetry(
+                provider_id=CANONICAL_NEWSDATA_ID,
+                daily_budget=self.newsdata.daily_budget,
+                rolling_15m_budget=self.newsdata.rolling_15m_budget,
+            )
+        elif provider_id == CANONICAL_CURRENTS_ID:
+            raw = self.db.get_provider_quota_telemetry(
+                provider_id=CANONICAL_CURRENTS_ID,
+                daily_budget=self.currents.daily_budget,
+                rolling_15m_budget=self.currents.rolling_15m_budget,
+            )
+        elif provider_id == CANONICAL_GUARDIAN_ID:
+            raw = self.db.get_provider_quota_telemetry(
+                provider_id=CANONICAL_GUARDIAN_ID,
+                daily_budget=self.guardian.daily_budget,
+                rolling_15m_budget=self.guardian.rolling_15m_budget,
+            )
+        else:
+            return None
+
+        limit = int(raw.get("daily_requests_budget") or 0)
+        used = int(raw.get("daily_requests_used") or 0)
+        return {
+            "provider_id": provider_id,
+            "quota_supported": True,
+            "limit": limit,
+            "used": used,
+            "remaining": max(limit - used, 0),
+            "window": "daily",
+            "reset_at": None,
+            "unit": "requests",
+            "source": "newslens_request_budget",
+            "rolling_15m_used": int(raw.get("rolling_15m_used") or 0),
+            "rolling_15m_limit": int(raw.get("rolling_15m_budget") or 0),
+            "is_exhausted": bool(raw.get("is_exhausted")),
+            "last_request_at": raw.get("last_request_at"),
+            "last_outcome": raw.get("last_outcome"),
+            "last_updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def _get_provider_state(self, descriptor: ProviderDescriptor) -> tuple[bool, bool]:

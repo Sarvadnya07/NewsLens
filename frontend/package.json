@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "api:contract:generate": "python ../scripts/export_openapi.py && python ../scripts/check_frontend_contract.py",
+    "api:contract:check": "python ../scripts/export_openapi.py --check && python ../scripts/check_frontend_contract.py"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.105.0",

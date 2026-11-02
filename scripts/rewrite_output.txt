@@ -1,0 +1,8 @@
+﻿python : C:\Users\ASUS\AppData\Local\Programs\Python\Python312\python.exe: can't open file 
+'C:\\Users\\ASUS\\Desktop\\NewsLens-India\\scripts\\rewrite_predict.py': [Errno 2] No such file or directory
+At line:1 char:1
++ python scripts/rewrite_predict.py 2>&1 | Out-File -Encoding utf8 scri ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\ASUS\A...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

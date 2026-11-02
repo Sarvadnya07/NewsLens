@@ -62,16 +62,20 @@ class FakeNewsScreeningModel:
         return self.vectorizer is not None and self.classifier is not None
 
     def get_influential_tokens(self, text: str, top_n: int = 5) -> list[tuple[str, str]]:
-        """Extracts actual non-zero features and their model coefficients for the given text."""
+        """Extracts non-zero features and their input contributions (C_i = x_i * w_i) for the given text."""
         if not self.is_ready:
             return []
         try:
             import numpy as np
 
             cleaned = clean_text(text)
-            X = self.vectorizer.transform([cleaned])
-            feature_names = np.array(self.vectorizer.get_feature_names_out())
-            coefs = self.classifier.coef_[0]
+            vectorizer = self.vectorizer
+            classifier = self.classifier
+            if vectorizer is None or classifier is None:
+                return []
+            X = vectorizer.transform([cleaned])
+            feature_names = np.array(vectorizer.get_feature_names_out())
+            coefs = classifier.coef_[0]
             non_zero_indices = X.nonzero()[1]
             if len(non_zero_indices) == 0:
                 return []
@@ -79,10 +83,13 @@ class FakeNewsScreeningModel:
             token_weights = []
             for idx in non_zero_indices:
                 token = feature_names[idx]
-                w = coefs[idx]
-                token_weights.append((token, w))
+                w = float(coefs[idx])
+                x_val = float(X[0, idx])
+                # Feature explanation token contribution C_i = x_i * w_i
+                contribution = x_val * w
+                token_weights.append((token, contribution))
 
-            # Sort by absolute impact
+            # Sort by absolute contribution impact |C_i|
             token_weights.sort(key=lambda item: abs(item[1]), reverse=True)
             formatted = []
             for tok, weight in token_weights[:top_n]:
@@ -141,26 +148,60 @@ class FakeNewsScreeningModel:
 
         cleaned = clean_text(text)
         tokens = cleaned.split()
+        vectorizer = self.vectorizer
+        classifier = self.classifier
+        if vectorizer is None or classifier is None:
+            raise RuntimeError("Screening model artifacts are not loaded")
+
         if len(tokens) < 2:
             return {
                 "status": "short_input",
                 "error": "Input text is too short for reliable linguistic screening.",
                 "label": "Undetermined",
                 "confidence": 0.0,
+                "score": 0.0,
+                "model_score": 0.0,
                 "prob_fake": 0.0,
                 "prob_true": 0.0,
                 "is_uncertain": True,
                 "cleaned_text": cleaned,
+                "explanation": "Input text contains fewer than 2 recognizable words.",
                 "uncertainty_note": "Input text contains fewer than 2 recognizable words.",
+                "influential_tokens": [],
+                "tokens": [],
             }
 
-        X = self.vectorizer.transform([cleaned])
-        proba = self.classifier.predict_proba(X)[0]
+        X = vectorizer.transform([cleaned])
+        if X.nnz == 0:
+            insufficient_msg = (
+                "None of the words in the submitted text overlap with the model's trained vocabulary. "
+                "Statistical linguistic screening cannot provide a meaningful veracity indicator. "
+                "Model Advisory: This model was trained on the US political LIAR benchmark and does not have calibrated vocabulary for this input. "
+                "Always inspect multi-source publisher coverage and accredited fact-checking evidence."
+            )
+            return {
+                "status": "insufficient_signal",
+                "label": "Insufficient / No Meaningful Model Signal",
+                "raw_class": -1,
+                "confidence": 0.5,
+                "score": 0.5,
+                "model_score": 0.5,
+                "prob_fake": 0.5,
+                "prob_true": 0.5,
+                "is_uncertain": True,
+                "cleaned_text": cleaned,
+                "explanation": insufficient_msg,
+                "uncertainty_note": insufficient_msg,
+                "influential_tokens": [],
+                "tokens": [],
+            }
+
+        proba = classifier.predict_proba(X)[0]
         # Class 0 = lower-veracity LIAR label group, Class 1 = higher-veracity group
         prob_fake = float(proba[0])
         prob_true = float(proba[1])
 
-        pred_class = int(self.classifier.predict(X)[0])
+        pred_class = int(classifier.predict(X)[0])
         label = (
             "Higher-veracity linguistic pattern"
             if pred_class == 1
@@ -189,7 +230,7 @@ class FakeNewsScreeningModel:
                 + uncertainty_note
             )
 
-        tokens = self.get_influential_tokens(text, top_n=6)
+        influential = self.get_influential_tokens(text, top_n=6)
 
         return {
             "status": "success",
@@ -197,11 +238,14 @@ class FakeNewsScreeningModel:
             "label": label,
             "raw_class": pred_class,
             "confidence": round(model_score, 4),
+            "score": round(model_score, 4),
             "model_score": round(model_score, 4),
             "prob_fake": round(prob_fake, 4),
             "prob_true": round(prob_true, 4),
             "is_uncertain": is_uncertain,
             "cleaned_text": cleaned,
+            "explanation": uncertainty_note,
             "uncertainty_note": uncertainty_note,
+            "influential_tokens": influential,
             "tokens": tokens,
         }

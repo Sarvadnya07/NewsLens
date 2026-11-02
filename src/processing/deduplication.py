@@ -101,7 +101,12 @@ class NewsDeduplicator:
                         publishers.add(articles[j].publisher)
 
             # Sort related articles by similarity score
-            related.sort(key=lambda x: x["similarity"], reverse=True)
+            related.sort(
+                key=lambda x: (
+                    float(x["similarity"]) if isinstance(x["similarity"], (int, float)) else 0.0
+                ),
+                reverse=True,
+            )
 
             clusters.append(
                 {
@@ -150,5 +155,10 @@ class NewsDeduplicator:
                     }
                 )
 
-        results.sort(key=lambda x: x["similarity"], reverse=True)
+        results.sort(
+            key=lambda x: (
+                float(x["similarity"]) if isinstance(x["similarity"], (int, float)) else 0.0
+            ),
+            reverse=True,
+        )
         return results[:top_n]

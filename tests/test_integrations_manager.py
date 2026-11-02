@@ -351,8 +351,12 @@ def test_api_quota_endpoint():
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert data["provider_id"] == "newsdata_io"
-    assert "daily_requests_used" in data
-    assert "rolling_15m_used" in data
+    assert data["quota_supported"] is True
+    assert data["unit"] == "requests"
+    assert data["source"] == "newslens_request_budget"
+    assert data["used"] is not None
+    assert data["limit"] is not None
+    assert data["rolling_15m_used"] is not None
 
 
 def test_api_secrets_never_exposed():

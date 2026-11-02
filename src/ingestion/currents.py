@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from backend.config import sanitize_text, settings
+from src.config import sanitize_text, settings
 from src.ingestion.models import (
     STATUS_DISABLED,
     STATUS_INVALID_RESPONSE,
@@ -74,8 +74,8 @@ class CurrentsClient:
             }
 
         start = time.perf_counter()
-        headers = {"Authorization": self.api_key.strip()}
-        params = {"language": "en", "page_size": 1}
+        headers = {"Authorization": (self.api_key or "").strip()}
+        params: Dict[str, Any] = {"language": "en", "page_size": 1}
 
         try:
             resp = requests.get(
@@ -185,7 +185,7 @@ class CurrentsClient:
         # Quota reservation check
         reservation_id: Optional[int] = None
         if self.db:
-            allowed, reservation_id, reason = self.db.reserve_provider_budget(
+            allowed, reason, reservation_id = self.db.reserve_provider_budget(
                 provider_id=CANONICAL_CURRENTS_ID,
                 profile=profile,
                 daily_budget=self.daily_budget,
@@ -205,7 +205,7 @@ class CurrentsClient:
                     http_status=None,
                 )
 
-        headers = {"Authorization": self.api_key.strip()}
+        headers = {"Authorization": (self.api_key or "").strip()}
         params: Dict[str, Any] = {"language": language or "en"}
 
         if profile == "currents_india":
@@ -241,7 +241,7 @@ class CurrentsClient:
                         articles.append(norm)
 
                 if self.db and reservation_id:
-                    self.db.finalize_provider_reservation(
+                    self.db.finalize_provider_request(
                         reservation_id=reservation_id,
                         status_code=200,
                         outcome="success" if articles else "no_results",
@@ -262,7 +262,7 @@ class CurrentsClient:
                 )
             elif resp.status_code == 429:
                 if self.db and reservation_id:
-                    self.db.finalize_provider_reservation(
+                    self.db.finalize_provider_request(
                         reservation_id=reservation_id,
                         status_code=429,
                         outcome="rate_limited",
@@ -282,7 +282,7 @@ class CurrentsClient:
                 )
             else:
                 if self.db and reservation_id:
-                    self.db.finalize_provider_reservation(
+                    self.db.finalize_provider_request(
                         reservation_id=reservation_id,
                         status_code=resp.status_code,
                         outcome="provider_error",
@@ -303,7 +303,7 @@ class CurrentsClient:
         except requests.exceptions.Timeout:
             dur = (time.perf_counter() - start_time) * 1000
             if self.db and reservation_id:
-                self.db.finalize_provider_reservation(
+                self.db.finalize_provider_request(
                     reservation_id=reservation_id,
                     status_code=None,
                     outcome="timeout",
@@ -323,7 +323,7 @@ class CurrentsClient:
         except Exception as exc:
             dur = (time.perf_counter() - start_time) * 1000
             if self.db and reservation_id:
-                self.db.finalize_provider_reservation(
+                self.db.finalize_provider_request(
                     reservation_id=reservation_id,
                     status_code=None,
                     outcome="error" if req_dispatched else "canceled",

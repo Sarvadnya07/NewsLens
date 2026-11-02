@@ -38,6 +38,6 @@ class ArticleFilterParams(BaseModel):
     query: Optional[str] = None
     source_type: Optional[str] = None
     publisher: Optional[str] = None
-    page: int = Field(1, ge=1)
+    page: int = Field(1, ge=1, le=100_000)
     page_size: int = Field(20, ge=1, le=100)
     sort_order: str = Field("Recency", pattern="^(Recency|Oldest|Chronological)$")

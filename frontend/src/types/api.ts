@@ -118,11 +118,28 @@ export interface MLScreeningResult {
   influential_tokens: InfluentialToken[];
 }
 
+export interface RelatedCoverageItem {
+  title: string;
+  publisher: string;
+  url: string;
+  published_at?: string | null;
+  similarity: number;
+  relationship: string;
+  is_syndication: boolean;
+}
+
+export interface EvidenceAssessment {
+  available_evidence: string[];
+  missing_evidence: string[];
+  analytical_recommendations: string;
+}
+
 export interface AnalysisResponse {
   input_text: string;
   screening: MLScreeningResult;
-  related_coverage: any[];
+  related_coverage: RelatedCoverageItem[];
   fact_check_matches: any[];
+  evidence_assessment?: EvidenceAssessment;
   analysis_timestamp: string;
 }
 
@@ -217,7 +234,16 @@ export interface ProviderStatusItem {
   env_key_name?: string | null;
   is_configured: boolean;
   is_enabled: boolean;
-  status_label: 'operational' | 'configured_not_tested' | 'not_configured' | 'disabled' | 'rate_limited' | 'provider_error' | 'retired' | 'backlog';
+  status_label:
+    | 'operational'
+    | 'degraded'
+    | 'configured_not_tested'
+    | 'not_configured'
+    | 'disabled'
+    | 'rate_limited'
+    | 'provider_error'
+    | 'retired'
+    | 'backlog';
   last_refresh_at?: string | null;
   last_attempt_at?: string | null;
   last_attempt_status?: string | null;
@@ -226,19 +252,29 @@ export interface ProviderStatusItem {
   items_count: number;
   new_items_inserted: number;
   error_message?: string | null;
-  quota?: {
-    provider_id: string;
-    daily_limit?: number | null;
-    daily_consumed: number;
-    daily_remaining?: number | null;
-    rolling_15m_consumed: number;
-    is_exhausted?: boolean;
-    last_request_at?: string | null;
-    last_outcome?: string | null;
-  } | null;
+  quota?: ProviderQuotaTelemetry | null;
   supported_profiles: string[];
   documentation_url?: string | null;
   terms_url?: string | null;
+}
+
+/** NewsLens request-budget telemetry (internal governance, not a provider quota). */
+export interface ProviderQuotaTelemetry {
+  provider_id: string;
+  quota_supported: boolean;
+  limit?: number | null;
+  used?: number | null;
+  remaining?: number | null;
+  window: string;
+  reset_at?: string | null;
+  unit: string;
+  source: string;
+  rolling_15m_used?: number | null;
+  rolling_15m_limit?: number | null;
+  is_exhausted?: boolean | null;
+  last_request_at?: string | null;
+  last_outcome?: string | null;
+  last_updated_at?: string | null;
 }
 
 export interface IntegrationsOverview {
@@ -250,13 +286,29 @@ export interface IntegrationsOverview {
   providers: ProviderStatusItem[];
 }
 
+/** Canonical connection-test outcome; identical for every provider. */
 export interface ConnectionTestResult {
   provider_id: string;
+  status:
+    | 'connected'
+    | 'not_configured'
+    | 'not_implemented'
+    | 'auth_failed'
+    | 'rate_limited'
+    | 'timeout'
+    | 'unavailable'
+    | 'invalid_response'
+    | 'error';
+  connected: boolean;
+  configured: boolean;
+  implemented: boolean;
   success: boolean;
-  status: string;
   message: string;
+  checked_at: string;
   http_status?: number | null;
   latency_ms?: number | null;
+  error?: string | null;
+  request_id?: string | null;
 }
 
 export interface IntegrationRefreshResult {

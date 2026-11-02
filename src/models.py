@@ -58,6 +58,8 @@ def normalize_published_at(value: Any) -> str:
             logger.debug("Unparseable publication date retained as metadata only: %r", text)
             return ""
 
+    if dt is None:  # defensive: every parse path above assigns or returns
+        return ""
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc).isoformat()
